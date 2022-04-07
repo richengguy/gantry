@@ -1,0 +1,25 @@
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "gantry"
+authors = [{name = "Richard Rzeszutek"}]
+readme = "README.md"
+version = "0.1.0"
+description = "Manager Dockerized services on single-host deployments."
+dependencies = [
+    "click",
+    "jinja2",
+    "jsonschema",
+    "ruamel.yaml"
+]
+
+[project.optional-dependencies]
+dev = [
+    "flake8",
+    "mypy"
+]
+
+[project.scripts]
+gantry = "gantry.cli:main"

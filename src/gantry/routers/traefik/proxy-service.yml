@@ -1,0 +1,19 @@
+name: proxy
+image: traefik:v2.6.1
+entrypoint:
+  routes:
+    - /api
+    - /dashboard
+files:
+  docker-socket:
+    internal: /var/run/docker.sock
+    external: /var/run/docker.sock
+  config-file:
+    internal: /traefik.yml
+    external: ./traefik.yml
+service-ports:
+  http:
+    internal: 80
+    external: 80
+metadata:
+  traefik.http.routers.proxy.service: api@internal

@@ -1,0 +1,51 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "/service_manager/schemas/service_group.json",
+    "title": "service-manager: Service Group",
+    "description": "Describes a group of containerized services running on a Docker host machine.",
+    "type": "object",
+    "properties": {
+        "name": {
+            "description": "The service group's name.  Generally the same as the host machine.",
+            "type": "string"
+        },
+        "network": {
+            "description": "Name of the internal container network.",
+            "type": "string"
+        },
+        "router": {
+            "description": "The routing service used to connect containers to the outside world.",
+            "type": "object",
+            "properties": {
+                "provider": {
+                    "description": "The provider for the routing service.",
+                    "type": "string",
+                    "enum": [
+                        "traefik"
+                    ]
+                },
+                "config": {
+                    "description": "Relative path to the provider's configuration file.  This is treated as a Jinja2 template.",
+                    "type": "string"
+                }
+            },
+            "additionalProperties": false,
+            "required": ["provider", "config"]
+        },
+        "services": {
+            "description": "A list of all of the active services for this host.",
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "minItems": 1,
+            "uniqueItems": true
+        }
+    },
+    "required": [
+        "name",
+        "network",
+        "router"
+    ],
+    "additionalProperties": false
+}
