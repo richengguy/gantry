@@ -1,0 +1,10 @@
+name: gantry
+
+channels:
+  - defaults
+
+dependencies:
+  - python=3.10
+  - pip
+  - pip:
+    - poetry
