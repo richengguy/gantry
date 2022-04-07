@@ -16,6 +16,7 @@ from .exceptions import ComposeServiceBuildError, InvalidServiceDefinitionError
               type=click.Path(exists=False, file_okay=False, dir_okay=True, path_type=Path))
 @click.option('--force', '-f', 'force_overwrite', is_flag=True,
               help='Allow an existing output folder to be overwritten.')
+@click.version_option()
 def main(services: Path, output: Path, force_overwrite: bool):
     try:
         service_group = ServiceGroupDefinition(services)
