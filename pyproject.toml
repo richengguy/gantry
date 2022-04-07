@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Manage Docker containers on single-system deployments."
 authors = ["Richard Rzeszutek"]
 license = "BSD-2-Clause"
+readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.10"
@@ -15,6 +16,9 @@ jsonschema = "^4.4.0"
 [tool.poetry.dev-dependencies]
 flake8 = "^4.0.1"
 mypy = "^0.942"
+
+[tool.poetry.scripts]
+gantry = "gantry.cli:main"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
