@@ -52,8 +52,9 @@ definition.
 
 ### Service Group
 
-The YAML below shows an example service group definition.  It declares the
-available
+All of a host's services are enumerated by a service group.  The group
+definition also specifies the router used to route requests from the external
+network to the service containers.
 
 ```yaml
 name: myServiceGroup
@@ -65,23 +66,6 @@ services:
     - one_service
     - another_service
 ```
-
-**Top-Level Properties**
-
-| Property   | Required | Description |
-| ---------- | -------- | ----------- |
-| `name`     | Yes      | Service group name. |
-| `network`  | Yes      | Name of the internal network used by the service group. |
-| `router`   | Yes      | The router (i.e. reverse proxy) used to route requests to the host services. |
-| `services` | Yes      | All of the services that are part of the service group.  Each item corresponds to a service definition folder. |
-
-**`router` Property**
-
-| Property   | Required | Description |
-| ---------- | -------- | ----------- |
-| `provider` | Yes      | The routing provider.  This must be one of *gantry*'s supported providers. |
-| `config`   | Yes      | The router's configuration file.  It is relative to the `service.yml` file. |
-
 The configuration file is processed as a Jinja template.  This allows
 information about the host to be injected into the routing configuration using
 Jinja's variables expansion, e.g., `{{ some_variable }}`.
@@ -91,3 +75,51 @@ Jinja's variables expansion, e.g., `{{ some_variable }}`.
 | `service.network` | The name of the internal container network. |
 
 ### Service Definition
+
+A service is any application that runs within a container environment and can
+be accessed via a URL endpoint.  By default this is the service name, e.g.
+`http://my-host/my-service/`, but can be changed in the definition file.  The
+service itself can be either an existing container image or a Dockerfile that
+resides within the definition folder.
+
+**Example YAML Definition**
+
+An example definition where the `my-service` listens on `/endpoint` and uses the
+`some-image:v123` image.
+```yaml
+name: my-service
+entrypoint: /endpoint
+image: some-image:v123
+```
+
+An example definition that that builds the `custom-image` service using a
+Dockerfile inside of the definition folder.  The contents of the `build-args`
+property are used as build arguments when building the image.
+```yaml
+name: custom-image
+build-args:
+    firstArg: foo
+    secondArg: bar
+```
+
+Files can be mapped into a container using the `files` property, where
+`internal` is the path within the container and `external` is on the host's file
+system.  Volumes are similarly defined using the `volumes` property.  In that
+case all of the paths are within the container.
+```yaml
+name: including-files
+image: some-image:v123
+files:
+    config-file:
+        internal: /home/ubuntu/config.ini
+        external: "{{ service.folder }}"/config.ini
+volumes:
+    internal-storage: /storage
+```
+
+Information about the service group is provided to each definition in the form
+of Jinja variables.
+
+| Variable          | Description |
+| ------------------| ----------- |
+| `service.folder`  | The path to the service definition folder. |
