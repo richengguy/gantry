@@ -5,6 +5,7 @@ import re
 import subprocess
 import sys
 
+
 class EntryType(Enum):
     notice = 'notice'
     warning = 'warning'

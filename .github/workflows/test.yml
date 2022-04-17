@@ -17,4 +17,4 @@ jobs:
         run: conda run -n gantry --live-stream flake8 src
 
       - name: Run mypy.
-        run: conda run -n gantry --live-stream mypy src
+        run: conda run -n gantry --live-stream ./scripts/run-mypy
