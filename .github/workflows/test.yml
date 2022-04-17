@@ -1,0 +1,21 @@
+name: Run Tests
+
+on: [pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup conda environment and install gantry.
+        run: |
+          conda env create
+          conda run -n gantry --live-stream pip install --upgrade pip setuptools
+          conda run -n gantry --live-stream flit install
+
+      - name: Run flake8.
+        run: conda run -n gantry --live-stream flake8 src
+
+      - name: Run mypy.
+        run: conda run -n gantry --live-stream ./scripts/run-mypy

@@ -8,7 +8,7 @@ authors = [{name = "Richard Rzeszutek"}]
 readme = "README.md"
 version = "0.1.0"
 description = "Manager Dockerized services on single-host deployments."
-requires_python = "~=3.10"
+requires-python = "~=3.10"
 dependencies = [
     "click ~= 8.1",
     "jinja2 ~= 3.1",
@@ -19,7 +19,8 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "flake8",
-    "mypy"
+    "mypy",
+    "types-jsonschema"
 ]
 
 [project.scripts]
