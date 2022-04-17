@@ -11,6 +11,7 @@ jobs:
       - name: Setup conda environment and install gantry.
         run: |
           conda env create
+          conda run -n gantry --live-stream pip install --upgrade pip setuptools
           conda run -n gantry --live-stream flit install
 
       - name: Run flake8.
