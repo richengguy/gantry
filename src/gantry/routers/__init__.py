@@ -1,4 +1,4 @@
-from .provider import RoutingProvider  # noqa: F401
+from .provider import RoutingProvider
 from .traefik import TraefikRoutingProvider
 
 PROVIDERS: dict[str, type[RoutingProvider]] = {

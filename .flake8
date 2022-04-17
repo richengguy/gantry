@@ -1,2 +1,6 @@
 [flake8]
 max-line-length = 100
+per-file-ignores =
+    # Allow "imported by unused" imports in __init__.py files.
+    __init__.py: F401
+format = ::error file=%(path)s,line=%(row)d,col=%(col)d,title=Flake8 - %(code)s,::%(text)s
