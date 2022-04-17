@@ -14,7 +14,7 @@ jobs:
           conda run -n gantry --live-stream flit install
 
       - name: Run flake8.
-        run: conda run -n gantry --live-stream flake8 src --max-line-length=80
+        run: conda run -n gantry --live-stream flake8 src
 
       - name: Run mypy.
         run: conda run -n gantry --live-stream mypy src
