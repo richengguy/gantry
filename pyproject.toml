@@ -19,7 +19,8 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "flake8",
-    "mypy"
+    "mypy",
+    "types-jsonschema"
 ]
 
 [project.scripts]
