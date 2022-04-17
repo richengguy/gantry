@@ -11,11 +11,10 @@ jobs:
       - name: Setup conda environment and install gantry.
         run: |
           conda env create
-          conda activate gantry
-          flit install
+          conda run -n gantry --live-stream flit install
 
       - name: Run flake8.
-        run: flake8 src
+        run: conda run -n gantry --live-stream flake8 src
 
       - name: Run mypy.
-        run: mypy src
+        run: conda run -n gantry --live-stream mypy src
