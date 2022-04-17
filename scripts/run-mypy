@@ -65,7 +65,7 @@ def print_workflow_command(entry: MyPyEntry):
     else:
         title = 'MyPy'
 
-    print(f'::{entry.type.value},line={entry.line},col={entry.column},title={title}::{entry.message}')  # noqa: E501
+    print(f'::{entry.type.value} line={entry.line},col={entry.column},title={title}::{entry.message}')  # noqa: E501
 
 
 def run_mypy() -> tuple[int, list[str]]:
