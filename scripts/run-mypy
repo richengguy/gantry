@@ -1,0 +1,91 @@
+#!/bin/env python3
+from enum import Enum
+from typing import NamedTuple
+import re
+import subprocess
+import sys
+
+class EntryType(Enum):
+    notice = 'notice'
+    warning = 'warning'
+    error = 'error'
+
+
+class MyPyEntry(NamedTuple):
+    file: str
+    line: int
+    column: int
+    errorcode: str | None
+    message: str
+    type: EntryType
+
+
+ENTRY_PARSER = re.compile(r'(?P<file>.+):(?P<line>\d+):(?P<column>\d+): (?P<type>[a-z]+): (?P<message>.*)')  # noqa: E501
+MESSAGE_PARSER = re.compile(r'^(?P<message>.*) \[(?P<errorcode>.*)\]')
+
+ENTRY_TYPES = {
+    'note': EntryType.notice,
+    'error': EntryType.error,
+}
+
+
+def parse_entry(entry: str) -> MyPyEntry:
+    if not (matches := ENTRY_PARSER.match(entry)):
+        raise ValueError('Nothing returned.')
+
+    contents = matches.groupdict()
+    file = contents['file']
+    line = int(contents['line'])
+    column = int(contents['column'])
+    entry_type = ENTRY_TYPES[contents['type']]
+
+    message = contents['message']
+    errorcode = None
+
+    if entry_type == EntryType.error:
+        if matches := MESSAGE_PARSER.match(contents['message']):
+            contents = matches.groupdict()
+            message = contents['message']
+            errorcode = contents['errorcode']
+
+    return MyPyEntry(
+        file=file,
+        line=line,
+        column=column,
+        errorcode=errorcode,
+        message=message,
+        type=entry_type
+    )
+
+
+def print_workflow_command(entry: MyPyEntry):
+    if errorcode := entry.errorcode:
+        title = f'MyPy - [{errorcode}]'
+    else:
+        title = 'MyPy'
+
+    print(f'::{entry.type.value},line={entry.line},col={entry.column},title={title}::{entry.message}')  # noqa: E501
+
+
+def run_mypy() -> tuple[int, list[str]]:
+    mypy = [
+        'mypy', 'src',
+        '--no-error-summary',
+        '--show-column-numbers',
+        '--show-error-codes'
+    ]
+
+    result: subprocess.CompletedProcess = subprocess.run(mypy, capture_output=True)
+    exitcode = result.returncode
+    stdout = result.stdout.decode()
+    return exitcode, stdout.splitlines()
+
+
+if __name__ == '__main__':
+    exitcode, report = run_mypy()
+
+    for line in report:
+        entry = parse_entry(line)
+        print_workflow_command(entry)
+
+    sys.exit(exitcode)
