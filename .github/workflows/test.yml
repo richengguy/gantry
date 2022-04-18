@@ -19,3 +19,6 @@ jobs:
 
       - name: Run mypy.
         run: conda run -n gantry --live-stream ./scripts/run-mypy
+
+      - name: Run tests.
+        run: conda run -n gantry --live-stream pytest
