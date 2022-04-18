@@ -14,7 +14,7 @@ def test_schema_list():
     assert result.exit_code == 0
 
     schemas = result.output.splitlines()
-    assert len(schemas) == 1
+    assert len(schemas) == 2
     assert schemas[0] == Schema.SERVICE.value
     assert schemas[1] == Schema.SERVICE_GROUP.value
 
