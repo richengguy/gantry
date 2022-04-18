@@ -21,6 +21,7 @@ dev = [
     "flake8",
     "mypy",
     "pytest",
+    "pytest-github-actions-annotate-failures",
     "types-jsonschema"
 ]
 
