@@ -20,7 +20,6 @@ jobs:
       - name: Run 'flit build' to generate source distribution and Python wheel.
         run: |
           conda env create
-          conda env create
           conda run -n gantry --live-stream pip install --upgrade pip setuptools
           conda run -n gantry --live-stream flit build
 
