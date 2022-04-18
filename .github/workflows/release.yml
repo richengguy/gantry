@@ -67,8 +67,8 @@ jobs:
       - name: Attach artifacts to release.
         run: |
           echo "Attaching artifacts to ${RELEASE_TAG}."
-          wheel=$(ls dist/*.whl)
-          sdist=$(ls dist/*.tar.gz)
+          wheel=$(ls build-artifacts/*.whl)
+          sdist=$(ls build-artifacts/*.tar.gz)
           gh release upload ${RELEASE_TAG} \
             "schemas/schemas.tar.gz#Service Definition Schemas" \
             "${wheel}#Python Wheel" \
