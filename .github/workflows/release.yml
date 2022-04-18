@@ -11,6 +11,26 @@ on:
       - published
 
 jobs:
+  build-dist:
+    name: Build gantry release.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Run 'flit build' to generate source distribution and Python wheel.
+        run: |
+          conda env create
+          conda env create
+          conda run -n gantry --live-stream pip install --upgrade pip setuptools
+          conda run -n gantry --live-stream flit build
+
+      - name: Upload build artifacts.
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifacts
+          path: dist
+          if-no-files-found: error
+
   generate-schemas:
     name: Generate JSON schema package.
     runs-on: ubuntu-latest
@@ -27,8 +47,22 @@ jobs:
       - name: Create schemas archive.
         run: tar -czvf schemas.tar.gz schemas
 
-      - uses: actions/upload-artifact@v3
+      - name: Upload build artifacts.
+        uses: actions/upload-artifact@v3
         with:
           name: schemas
           path: schemas.tar.gz
           if-no-files-found: error
+
+  update-release:
+    name: Attach artifacts to release.
+    runs-on: ubuntu-latest
+    needs:
+      - build-dist
+      - generate-schemas
+    steps:
+      - name: Download build artifacts.
+        uses: actions/download-artifacts@v3
+
+      - name: Display contents.
+        run: ls -R
