@@ -1,0 +1,34 @@
+name: Build a new release.
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+
+  release:
+    types:
+      - published
+
+jobs:
+  generate-schemas:
+    name: Generate JSON schema package.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Export the JSON schemas from gantry.
+        run: |
+          conda env create
+          conda run -n gantry --live-stream pip install --upgrade pip setuptools
+          conda run -n gantry --live-stream flit install
+          conda run -n gantry --live-stream gantry schemas export
+
+      - name: Create schemas archive.
+        run: tar -czvf schemas.tar.gz schemas
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: schemas
+          path: schemas.tar.gz
+          if-no-files-found: error
