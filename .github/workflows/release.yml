@@ -1,11 +1,6 @@
 name: Build a new release.
 
 on:
-  pull_request:
-    types:
-      - opened
-      - synchronize
-
   release:
     types:
       - published
@@ -60,10 +55,14 @@ jobs:
       - build-dist
       - generate-schemas
     steps:
-      - uses: actions/checkout@v3
-
       - name: Download build artifacts.
         uses: actions/download-artifact@v3
 
-      - name: Display contents.
-        run: ls -R
+      - name: Parse version tag.
+        id: version
+        run: echo "::set-output name=tag::${GITHUB_REF/refs\/tags\//}"
+
+      - name: Attach artifacts to release.
+        run: |
+          echo "Attaching artifacts to ${RELEASE_TAG}."
+          gh release upload ${RELEASE_TAG} "schemas/schemas.tar.gz#Service Definition Schemas"
