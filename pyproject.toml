@@ -27,3 +27,6 @@ dev = [
 
 [project.scripts]
 gantry = "gantry.cli:main"
+
+[tool.flit.sdist]
+exclude=[".github", "scripts"]

@@ -16,7 +16,7 @@ jobs:
         run: |
           conda env create
           conda run -n gantry --live-stream pip install --upgrade pip setuptools
-          conda run -n gantry --live-stream flit build
+          conda run -n gantry --live-stream flit build --setup-py
 
       - name: Upload build artifacts.
         uses: actions/upload-artifact@v3
@@ -67,7 +67,12 @@ jobs:
       - name: Attach artifacts to release.
         run: |
           echo "Attaching artifacts to ${RELEASE_TAG}."
-          gh release upload ${RELEASE_TAG} "schemas/schemas.tar.gz#Service Definition Schemas"
+          wheel=$(ls dist/*.whl)
+          sdist=$(ls dist/*.tar.gz)
+          gh release upload ${RELEASE_TAG} \
+            "schemas/schemas.tar.gz#Service Definition Schemas" \
+            "${wheel}#Python Wheel" \
+            "${sdist}#Source Distribution"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ steps.version.outputs.tag }}
