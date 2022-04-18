@@ -1,17 +1,18 @@
+import json
 from pathlib import Path
 
 import click
 
-from . import ServiceGroupDefinition
+from . import ServiceGroupDefinition, __version__
 from .build import build_services
 from .exceptions import ComposeServiceBuildError, InvalidServiceDefinitionError
+from .schemas import get_schema, Schema
 
 
 @click.group()
-@click.version_option()
+@click.version_option(version=__version__)
 def main():
     '''Manage containers on single-host systems.'''
-    pass
 
 
 @main.command()
@@ -38,6 +39,44 @@ def build_compose(services: Path, output: Path, force_overwrite: bool):
         build_services(service_group, output, overwrite=force_overwrite)
     except ComposeServiceBuildError as e:
         raise click.ClickException(str(e))
+
+
+@main.group()
+def schemas():
+    '''Access the schemas that validate service groups and definitions.'''
+
+
+@schemas.command('dump')
+@click.argument('name', metavar='NAME',
+                type=click.Choice([schema.value for schema in Schema]))
+def schemas_dump(name: str):
+    '''Prints a schema in JSON format to stdout.
+
+    The list of valid schema names can be found with `gantry schemas list`.
+    '''
+    schema = Schema(name)
+    contents = get_schema(schema)
+    click.echo(json.dumps(contents, indent=4))
+
+
+@schemas.command('export')
+@click.option('--output', '-o', default='./schemas',
+              type=click.Path(file_okay=False, dir_okay=True, path_type=Path),
+              help='Output folder for the schema files.  Defaults to \'./schemas\'.')
+def schemas_export(output: Path):
+    '''Export the JSON schema files used by gantry.'''
+    output.mkdir(exist_ok=True)
+    for schema in Schema:
+        contents = get_schema(schema)
+        with (output / f'{schema.value}.json').open('wt') as f:
+            json.dump(contents, f, indent=4)
+
+
+@schemas.command('list')
+def schemas_list():
+    '''List the schemas used by gantry.'''
+    for schema in Schema:
+        click.echo(schema.value)
 
 
 if __name__ == '__main__':
