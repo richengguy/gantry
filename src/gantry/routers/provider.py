@@ -7,13 +7,13 @@ class RoutingProvider(ABC):
     '''Defines the routing provider for the managed services.'''
 
     @abstractmethod
-    def generate_service(self) -> ServiceDefinition:
+    def generate_service(self, args: dict) -> ServiceDefinition:
         '''Generate the service definition for the routing provider.
 
         Parameters
         ----------
-        config : Path
-            relative path to the configuration file
+        args : dict
+            optional arguments that the service can use to configure itself
 
         Returns
         -------

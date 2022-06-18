@@ -13,7 +13,7 @@ SERVICE_FILE = 'proxy-service.yml'
 class TraefikRoutingProvider(RoutingProvider):
     '''Configures Traefik as the services' routing provider.'''
 
-    def generate_service(self) -> ServiceDefinition:
+    def generate_service(self, args: dict) -> ServiceDefinition:
         yaml = YAML()
         with importlib.resources.open_text(__package__, SERVICE_FILE) as f:
             return ServiceDefinition(definition=yaml.load(f))
