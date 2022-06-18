@@ -50,6 +50,10 @@ definition.
 > **Note:** The name of the folder must match the name specified in the service
 > definition.
 
+The definition YAML files are all processed as Jinja templates.  Where
+specified, Jinja variable syntax of the form ``{{ some_variable }}`` can be used
+to inject values during processing.
+
 ### Service Group
 
 All of a host's services are enumerated by a service group.  The group
@@ -66,13 +70,6 @@ services:
     - one_service
     - another_service
 ```
-The configuration file is processed as a Jinja template.  This allows
-information about the host to be injected into the routing configuration using
-Jinja's variables expansion, e.g., `{{ some_variable }}`.
-
-| Variable          | Description |
-| ------------------| ----------- |
-| `service.network` | The name of the internal container network. |
 
 ### Service Definition
 
@@ -117,9 +114,38 @@ volumes:
     internal-storage: /storage
 ```
 
-Information about the service group is provided to each definition in the form
-of Jinja variables.
+The following variables are defined when a service definition is being
+processed:
 
 | Variable          | Description |
 | ------------------| ----------- |
 | `service.folder`  | The path to the service definition folder. |
+
+## Routers
+
+Routers are used to route external traffic into the internal container network.
+The choice of router is set by the `router` property in the
+[service group definition](#service-group).
+
+Each router has a configuration file specified by the `config` property that is
+processed as a Jinja template.  The following variables are defined when the
+group definition is being processed:
+
+| Variable          | Description |
+| ------------------| ----------- |
+| `service.network` | The name of the internal container network. |
+
+### Traefik
+
+The `traefik` router uses [traefik proxy](https://doc.traefik.io/traefik/) for
+passing information to and from the external network to the service containers.
+There is minimal configuration within the service definition beyond ensuring the
+dashboard can be accessed.  The router should be configured using either a YAML
+or TOML [configuration file](https://doc.traefik.io/traefik/providers/file/).
+
+The service itself has the following configuraiton arguments:
+
+| Argument | Type | Default | Description |
+| -------- | ---- | ------- | ----------- |
+| `map-socket` | `bool` | `true` | Map an external Docker socket into the Traefik container as a volume mount. |
+| `socket` | `string` | `/var/run/docker.sock` | Path to the Docker socket Traefik will be using. |
