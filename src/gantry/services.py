@@ -225,6 +225,7 @@ class ServiceGroupDefinition(_ServiceDefinitionBase):
     class RouterInfo(NamedTuple):
         provider: str
         config: TemplateReference
+        args: dict[str, object] | None
 
     def __init__(self, folder: Path) -> None:
         super().__init__(Schema.SERVICE_GROUP, folder=folder)
@@ -242,7 +243,8 @@ class ServiceGroupDefinition(_ServiceDefinitionBase):
 
         router = self._definition['router']
         config = TemplateReference(self.folder, router['config'])
-        return ServiceGroupDefinition.RouterInfo(router['provider'], config)
+        args = self._definition.get('args')
+        return ServiceGroupDefinition.RouterInfo(router['provider'], config, args)
 
     @property
     def services(self) -> dict[str, ServiceDefinition]:
