@@ -27,6 +27,10 @@
                 "config": {
                     "description": "Relative path to the provider's configuration file.  This is treated as a Jinja2 template.",
                     "type": "string"
+                },
+                "args": {
+                    "description": "Provider-specific arguments used when generating its service definition.",
+                    "type": "object"
                 }
             },
             "additionalProperties": false,
