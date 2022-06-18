@@ -243,7 +243,7 @@ class ServiceGroupDefinition(_ServiceDefinitionBase):
 
         router = self._definition['router']
         config = TemplateReference(self.folder, router['config'])
-        args = self._definition.get('args', {})
+        args = router.get('args', {})
         return ServiceGroupDefinition.RouterInfo(router['provider'], config, args)
 
     @property
