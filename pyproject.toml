@@ -6,7 +6,7 @@ build-backend = "flit_core.buildapi"
 name = "gantry"
 authors = [{name = "Richard Rzeszutek"}]
 readme = "README.md"
-version = "0.2.0"
+version = "0.3.1"
 description = "Manager Dockerized services on single-host deployments."
 requires-python = "~=3.10"
 dependencies = [
