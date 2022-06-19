@@ -1,0 +1,9 @@
+name: traefik-custom-socket
+network: test
+router:
+  provider: traefik
+  config: traefik.yml
+  args:
+    socket: /run/users/1001/docker.sock
+services:
+  - service

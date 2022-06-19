@@ -5,9 +5,11 @@ entrypoint:
     - /api
     - /dashboard
 files:
+  {% if map_socket %}
   docker-socket:
     internal: /var/run/docker.sock
-    external: /var/run/docker.sock
+    external: "{{ socket_path }}"
+  {% endif %}
   config-file:
     internal: /traefik.yml
     external: ./traefik.yml

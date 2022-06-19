@@ -62,7 +62,7 @@ def _build_compose_file(service_group: ServiceGroupDefinition) -> ComposeFile:
 
     services = map(
         router.register_service,
-        [router.generate_service()] + list(service_group)
+        [router.generate_service(service_group.router.args)] + list(service_group)
     )
 
     service_mapping: dict[str, ComposeService] = {}
