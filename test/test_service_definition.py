@@ -8,6 +8,11 @@ import pytest
 CompileFn = Callable[[str, str], ComposeFile]
 
 
+def _get_build_args(compose_spec: ComposeFile, service: str) -> dict[str, str | int]:
+    assert 'build' in compose_spec['services'][service]
+    return compose_spec['services'][service]['build'].get('args', {})
+
+
 def _get_routing_rule(compose_spec: ComposeFile, service: str) -> tuple[str, int | None]:
     labels = compose_spec['services'][service]['labels']
     path_rule = labels[f'traefik.http.routers.{service}.rule']
@@ -29,3 +34,17 @@ def test_entrypoints(service: str, expected_rule: str, expected_port: str,
     path_rule, port_rule = _get_routing_rule(compose_file, service)
     assert path_rule == expected_rule
     assert port_rule == expected_port
+
+
+@pytest.mark.parametrize(
+    ('service', 'expected_args'),
+    [
+        ('no-args', {}),
+        ('with-args', {'foo': 1, 'bar': 2})
+    ]
+)
+def test_build_args(service: str, expected_args: dict[str, str | int],
+                    compile_compose_file: CompileFn):
+    compose_file = compile_compose_file('service_definition', 'build-args')
+    build_args = _get_build_args(compose_file, service)
+    assert build_args == expected_args
