@@ -35,6 +35,7 @@ def test_entrypoints(service: str, expected_rule: set[str], expected_port: str,
                      compile_compose_file: CompileFn):
     compose_file = compile_compose_file('service-definition', 'entrypoints')
     path_rule, port_rule = _get_routing_rule(compose_file, service)
+    assert compose_file['services'][service]['image'] == 'hello-world:latest'
     assert path_rule == expected_rule
     assert port_rule == expected_port
 
