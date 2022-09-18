@@ -1,0 +1,9 @@
+name: entrypoints
+network: test
+router:
+  provider: traefik
+  config: traefik.yml
+services:
+  - complex-entrypoint
+  - default
+  - string-entrypoint

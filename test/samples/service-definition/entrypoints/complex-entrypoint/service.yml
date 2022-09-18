@@ -1,0 +1,7 @@
+name: complex-entrypoint
+entrypoint:
+  routes:
+    - /foo
+    - /bar
+  listens-on: 8080
+image: hello-world:latest

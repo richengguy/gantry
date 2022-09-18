@@ -123,7 +123,7 @@ class _ServiceDefinitionBase(ABC):
 class ServiceDefinition(_ServiceDefinitionBase):
     '''Defines a single containerized service.'''
     class Entrypoint(NamedTuple):
-        routes: str
+        routes: list[str]
         listens_on: int
 
     def __init__(self, *, folder: Path | None = None, definition: dict | None = None) -> None:
@@ -137,14 +137,14 @@ class ServiceDefinition(_ServiceDefinitionBase):
     @property
     def entrypoint(self) -> Entrypoint:
         '''The externally visible location of the service.'''
-        name = f'/{self.name}'
+        name = [f'/{self.name}']
         port = 80
 
         if 'entrypoint' in self._definition:
             value = self._definition['entrypoint']
             match value:
                 case str(value):
-                    name = value
+                    name = [value]
                 case dict(value):
                     name = value['routes']
                     port = value.get('listens-on', 80)

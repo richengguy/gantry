@@ -1,7 +1,34 @@
 from pathlib import Path
+from typing import Callable
+
+from click.testing import CliRunner
+
+from gantry import cli
+from gantry._compose_spec import ComposeFile
 
 import pytest
 from pytest import Config
+
+from ruamel.yaml import YAML
+
+
+@pytest.fixture()
+def compile_compose_file(samples_folder: Path, tmp_path: Path) -> Callable[[str, str], ComposeFile]:
+
+    def _run_command(folder: str, sample: str) -> ComposeFile:
+        runner = CliRunner()
+        default_example = samples_folder / folder / sample
+        with runner.isolated_filesystem(temp_dir=tmp_path) as td:
+            result = runner.invoke(cli.main, ['build-compose', '-s', default_example.as_posix()])
+            compose_file = Path(td) / 'services.docker' / 'docker-compose.yml'
+            assert result.exit_code == 0
+            assert compose_file.exists
+
+            yaml = YAML()
+            with compose_file.open('rt') as f:
+                return yaml.load(f)
+
+    return _run_command
 
 
 @pytest.fixture()
