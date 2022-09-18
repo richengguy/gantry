@@ -1,0 +1,7 @@
+name: string-entrypoint
+network: test
+router:
+  provider: traefik
+  config: traefik.yml
+services:
+  - string-entrypoint
