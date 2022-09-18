@@ -18,7 +18,7 @@ from ruamel.yaml import YAML
 )
 def test_router_args(sample: str, expected: str, samples_folder: Path, tmp_path: Path):
     runner = CliRunner()
-    default_example = samples_folder / sample
+    default_example = samples_folder / 'router' / sample
     with runner.isolated_filesystem(temp_dir=tmp_path) as td:
         result = runner.invoke(cli.main, ['build-compose', '-s', default_example.as_posix()])
         compose_file = Path(td) / 'services.docker' / 'docker-compose.yml'
