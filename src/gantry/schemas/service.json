@@ -157,10 +157,6 @@
         }
     },
     "required": ["name"],
-    "anyOf": [
-        {"required": ["build-args"]},
-        {"required": ["image"]}
-    ],
     "not": {
         "anyOf": [
             {"required": ["image", "build-args"]}

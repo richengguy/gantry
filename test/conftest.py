@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Callable
 
+import click
 from click.testing import CliRunner
 
 from gantry import cli
@@ -21,6 +22,8 @@ def compile_compose_file(samples_folder: Path, tmp_path: Path) -> Callable[[str,
         with runner.isolated_filesystem(temp_dir=tmp_path) as td:
             result = runner.invoke(cli.main, ['build-compose', '-s', default_example.as_posix()])
             compose_file = Path(td) / 'services.docker' / 'docker-compose.yml'
+
+            click.echo(result.stdout)
             assert result.exit_code == 0
             assert compose_file.exists
 

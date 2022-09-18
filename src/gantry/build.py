@@ -130,7 +130,7 @@ def _convert_to_compose_service(service: ServiceDefinition,
 
     if image := service.image:
         compose_service['image'] = image
-    elif build_args := service.build_args:
+    else:
         if folder := service.folder:
             context = folder.relative_to(folder.parent).as_posix()
         else:
@@ -138,9 +138,11 @@ def _convert_to_compose_service(service: ServiceDefinition,
 
         compose_service['image'] = ':'.join([service.name, tag])
         compose_service['build'] = {
-            'args': build_args,
             'context': context
         }
+
+        if build_args := service.build_args:
+            compose_service['build']['args'] = build_args
 
     compose_service['environment'] = {var.key: str(var.value) for var in service.environment}
     compose_service['restart'] = 'unless-stopped'
