@@ -1,4 +1,4 @@
-name: default
+name: with-args
 build-args:
   foo: 1
   bar: 2
