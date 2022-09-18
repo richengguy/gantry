@@ -1,0 +1,4 @@
+name: default
+build-args:
+  foo: 1
+  bar: 2

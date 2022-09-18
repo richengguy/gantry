@@ -1,0 +1,8 @@
+name: build-args
+network: test
+router:
+  provider: traefik
+  config: traefik.yml
+services:
+  - no-args
+  - with-args
