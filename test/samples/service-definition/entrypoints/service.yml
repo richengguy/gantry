@@ -5,4 +5,5 @@ router:
   config: traefik.yml
 services:
   - complex-entrypoint
+  - default
   - string-entrypoint
