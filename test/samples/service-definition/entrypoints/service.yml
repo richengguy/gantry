@@ -1,4 +1,4 @@
-name: string-entrypoint
+name: entrypoints
 network: test
 router:
   provider: traefik
