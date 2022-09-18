@@ -1,6 +1,6 @@
 from typing import Callable
 
-from gantry._compose_spec import ComposeFile
+from gantry._compose_spec import ComposeBuild, ComposeFile
 
 import pytest
 
@@ -8,9 +8,9 @@ import pytest
 CompileFn = Callable[[str, str], ComposeFile]
 
 
-def _get_build_args(compose_spec: ComposeFile, service: str) -> dict[str, str | int]:
+def _get_build_info(compose_spec: ComposeFile, service: str) -> ComposeBuild:
     assert 'build' in compose_spec['services'][service]
-    return compose_spec['services'][service]['build'].get('args', {})
+    return compose_spec['services'][service]['build']
 
 
 def _get_routing_rule(compose_spec: ComposeFile, service: str) -> tuple[set[str], int | None]:
@@ -49,5 +49,6 @@ def test_entrypoints(service: str, expected_rule: set[str], expected_port: str,
 def test_build_args(service: str, expected_args: dict[str, str | int],
                     compile_compose_file: CompileFn):
     compose_file = compile_compose_file('service-definition', 'build-args')
-    build_args = _get_build_args(compose_file, service)
-    assert build_args == expected_args
+    build_info = _get_build_info(compose_file, service)
+    assert build_info.get('args', {}) == expected_args
+    assert build_info['context'] == service
