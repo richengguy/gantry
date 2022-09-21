@@ -11,6 +11,14 @@ CompileFn = Callable[[str, str], ComposeFile]
 ServicesFn = Callable[[str, str], Path]
 
 
+def test_router_enable_tls(compile_compose_file: CompileFn):
+    '''Ensure TLS port 443 is open if TLS is requested.'''
+    compose_spec = compile_compose_file('router', 'traefik-enable-tls')
+    ports = compose_spec['services']['proxy']['ports']
+    assert ports[0] == "80:80"
+    assert ports[1] == "443:443"
+
+
 @pytest.mark.parametrize(
     ('sample', 'expected'),
     [
@@ -18,8 +26,7 @@ ServicesFn = Callable[[str, str], Path]
         ('traefik-custom-socket', '/run/users/1001/docker.sock')
     ]
 )
-def test_router_args(sample: str, expected: str,
-                     compile_compose_file: Callable[[str, str], ComposeFile]):
+def test_router_socket(sample: str, expected: str, compile_compose_file: CompileFn):
     '''Ensure traefik router args are set correctly.'''
     compose_spec = compile_compose_file('router', sample)
     volumes = compose_spec['services']['proxy']['volumes']
