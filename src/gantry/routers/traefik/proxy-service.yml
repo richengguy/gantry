@@ -10,7 +10,12 @@ files:
     internal: /var/run/docker.sock
     external: "{{ socket_path }}"
   {% endif %}
-  config-file:
+  {% if dynamic_config %}
+  dynamic-config:
+    internal: "/{{ dynamic_config.name }}"
+    external: "./{{ dynamic_config.name }}"
+  {% endif %}
+  static-config:
     internal: /traefik.yml
     external: "./{{ config_file }}"
 service-ports:

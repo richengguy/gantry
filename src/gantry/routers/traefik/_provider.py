@@ -22,11 +22,19 @@ def _get_service_file() -> str:
         return f.read()
 
 
+def _get_dynamic_config(args: dict) -> Path | None:
+    value: str | None = args.get('dynamic-config')
+    if value is None:
+        return None
+    else:
+        return Path(value)
+
+
 class TraefikRoutingProvider(RoutingProvider):
     '''Configures Traefik as the services' routing provider.'''
 
     def copy_resources(self, services_folder: Path, output_folder: Path, args: dict):
-        dynamic_config: str | None = args.get('dynamic-config')
+        dynamic_config = _get_dynamic_config(args)
         if dynamic_config is None:
             return
 
@@ -40,7 +48,7 @@ class TraefikRoutingProvider(RoutingProvider):
     def generate_service(self, args: dict) -> ServiceDefinition:
         template_args = {
             'config_file': args['_config-file'],
-            'dynamic_config': args.get('dynamic-config'),
+            'dynamic_config': _get_dynamic_config(args),
             'map_socket': args.get('map-socket', True),
             'socket_path': args.get('socket', DOCKER_SOCKET)
         }
