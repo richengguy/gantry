@@ -4,6 +4,7 @@ router:
   provider: traefik
   config: traefik.yml
   args:
+    dynamic-config: ./certs
     enable-tls: true
 services:
   - service

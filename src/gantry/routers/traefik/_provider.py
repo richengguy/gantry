@@ -48,7 +48,8 @@ class TraefikRoutingProvider(RoutingProvider):
     def generate_service(self, args: dict) -> ServiceDefinition:
         template_args = {
             'config_file': args['_config-file'],
-            'dynamic_config': _get_dynamic_config(args),
+            'dynamic_config': args.get('dynamic-config'),
+            'enable_tls': args.get('enable-tls', False),
             'map_socket': args.get('map-socket', True),
             'socket_path': args.get('socket', DOCKER_SOCKET)
         }
