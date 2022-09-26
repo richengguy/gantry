@@ -181,6 +181,10 @@ def _copy_services_resources(service_group: ServiceGroupDefinition, folder: Path
     folder : Path
         path to output folder
     '''
+    if services_folder := service_group.folder:
+        router = routers.PROVIDERS[service_group.router.provider]()
+        router.copy_resources(services_folder, folder, service_group.router.args)
+
     for service in service_group:
         if service.folder is None:
             break
