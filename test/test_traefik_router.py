@@ -11,9 +11,9 @@ CompileFn = Callable[[str, str], ComposeFile]
 ServicesFn = Callable[[str, str], Path]
 
 
-def test_router_enable_tls(compile_services: ServicesFn):
-    '''Ensure TLS port 443 is open if TLS is requested.'''
-    services_folder = compile_services('router', 'traefik-enable-tls')
+def test_router_dynamic_config(compile_services: ServicesFn):
+    '''Simulate working with TLS and a dynamic configuration folder.'''
+    services_folder = compile_services('router', 'traefik-dynamic-config')
 
     # Check that the docker-compose file is configured correctly.
     reader = YAML()
@@ -35,7 +35,8 @@ def test_router_enable_tls(compile_services: ServicesFn):
     with certs_file.open('rt') as f:
         certificates = reader.load(f)
 
-    assert certificates['some-config'] is True
+    assert certificates['tls']['certificates'][0]['keyFile'] == 'my.key'
+    assert certificates['tls']['certificates'][0]['certFile'] == 'my.cert'
 
 
 @pytest.mark.parametrize(

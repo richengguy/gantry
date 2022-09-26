@@ -1,3 +1,0 @@
-name: service
-entrypoint: /
-image: hello-world:latest
