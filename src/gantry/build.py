@@ -59,10 +59,12 @@ def _build_compose_file(service_group: ServiceGroupDefinition) -> ComposeFile:
         raise ComposeServiceBuildError(f'Unknown routing provider `{service_group.router.provider}`.')  # noqa: E501
 
     router = routers.PROVIDERS[service_group.router.provider]()
+    router_args = service_group.router.args.copy()
+    router_args['_config-file'] = service_group.router.config.path.name
 
     services = map(
         router.register_service,
-        [router.generate_service(service_group.router.args)] + list(service_group)
+        [router.generate_service(router_args)] + list(service_group)
     )
 
     service_mapping: dict[str, ComposeService] = {}

@@ -12,7 +12,7 @@ files:
   {% endif %}
   config-file:
     internal: /traefik.yml
-    external: ./traefik.yml
+    external: "./{{ config_file }}"
 service-ports:
   http:
     internal: 80
