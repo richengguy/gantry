@@ -10,3 +10,9 @@ entryPoints:
 
   websecure:
     address: ":443"
+
+
+providers:
+  file:
+    directory: /certs/
+    watch: true
