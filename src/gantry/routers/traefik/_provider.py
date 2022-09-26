@@ -1,5 +1,7 @@
 import importlib.resources
 from io import StringIO
+from pathlib import Path
+import shutil
 
 from jinja2 import Environment
 
@@ -7,6 +9,7 @@ from ruamel.yaml import YAML
 
 from ._config import TraefikConfig
 from .. import RoutingProvider
+from ...exceptions import ServiceManagerException
 from ...services import ServiceDefinition
 
 
@@ -21,6 +24,18 @@ def _get_service_file() -> str:
 
 class TraefikRoutingProvider(RoutingProvider):
     '''Configures Traefik as the services' routing provider.'''
+
+    def copy_resources(self, services_folder: Path, output_folder: Path, args: dict):
+        dynamic_config: str | None = args.get('dynamic-config')
+        if dynamic_config is None:
+            return
+
+        resource_path = services_folder / dynamic_config
+        if not resource_path.is_dir():
+            raise ServiceManagerException(f'`{dynamic_config}` is not a folder.')
+
+        output_path = output_folder / resource_path.name
+        shutil.copytree(resource_path, output_path)
 
     def generate_service(self, args: dict) -> ServiceDefinition:
         template_args = {
