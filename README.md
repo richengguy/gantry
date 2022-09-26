@@ -153,6 +153,3 @@ The service itself has the following configuration arguments:
 | `enable-tls` | `bool` | `false` | Set to `true` to enable TLS.  Fully enabling TLS support will require [configuring TLS](https://doc.traefik.io/traefik/https/tls/) inside of the Traefik configuration file. |
 | `map-socket` | `bool` | `true` | Map an external Docker socket into the Traefik container as a volume mount. |
 | `socket` | `string` | `/var/run/docker.sock` | Path to the Docker socket Traefik will be using. |
-
-> **Note:** Using TLS will still require Traefik itself to be configured.
-> Please consult the Traefik file provider documentation for details.
