@@ -57,6 +57,18 @@ def test_router_dynamic_config(compile_services: ServicesFn):
     assert certificates['tls']['certificates'][0]['certFile'] == 'my.cert'
 
 
+def test_router_enable_tls(compile_compose_file: CompileFn):
+    '''Check that TLS is enabled correctly.'''
+    compose_spec = compile_compose_file('router', 'traefik-enable-tls')
+
+    ports = compose_spec['services']['proxy']['ports']
+    assert ports[0] == '80:80'
+    assert ports[1] == '443:443'
+
+    labels = compose_spec['services']['proxy']['labels']
+    assert 'traefik.http.services.proxy.loadbalancer.server.port' not in labels
+
+
 @pytest.mark.parametrize(
     ('sample', 'expected'),
     [
