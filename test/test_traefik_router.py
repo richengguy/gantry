@@ -26,6 +26,30 @@ def test_router_args(sample: str, expected: str,
     assert volumes[0] == f'{expected}:/var/run/docker.sock:ro'
 
 
+def test_router_dynamic_config(compile_services: ServicesFn):
+    '''Check that Traefik dynamic configuration get sets up correctly.'''
+    output_path = compile_services('router', 'traefik-dynamic-config')
+
+    # Check that the dynamic configuration folder will be mounted as a volume.
+    reader = YAML()
+    with (output_path / 'docker-compose.yml').open('rt') as f:
+        compose_spec: ComposeFile = reader.load(f)
+
+    volumes = compose_spec['services']['proxy']['volumes']
+    assert './configuration:/configuration:ro' in volumes
+
+    # Check that the configuration folder was copied into the services folder.
+    certificates_file = output_path / 'configuration' / 'certificates.yml'
+    assert certificates_file.exists()
+
+    reader = YAML()
+    with certificates_file.open('rt') as f:
+        certificates = reader.load(f)
+
+    assert certificates['tls']['certificates'][0]['keyFile'] == 'my.key'
+    assert certificates['tls']['certificates'][0]['certFile'] == 'my.cert'
+
+
 def test_router_config_render(compile_services: ServicesFn):
     '''Check that the router's configuration is rendered correctly.'''
     output_path = compile_services('router', 'traefik-custom-config')
