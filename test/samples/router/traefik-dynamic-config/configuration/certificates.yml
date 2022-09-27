@@ -1,3 +1,6 @@
 # This file would contain the actual TLS configuration, namely the CA cert and a
 # private key.
-some-config: true
+tls:
+  certificates:
+    - certFile: my.cert
+      keyFile: my.key
