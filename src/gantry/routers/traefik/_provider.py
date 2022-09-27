@@ -15,7 +15,7 @@ from ...services import ServiceDefinition
 
 DOCKER_SOCKET = '/var/run/docker.sock'
 SERVICE_FILE = 'proxy-service.yml'
-
+TLS_ENTRYPOINT = 'webTLS'
 
 def _get_service_file() -> str:
     with importlib.resources.open_text(__package__, SERVICE_FILE) as f:
@@ -51,7 +51,9 @@ class TraefikRoutingProvider(RoutingProvider):
             'dynamic_config': _get_dynamic_config(args),
             'enable_tls': args.get('enable-tls', False),
             'map_socket': args.get('map-socket', True),
-            'socket_path': args.get('socket', DOCKER_SOCKET)
+            'socket_path': args.get('socket', DOCKER_SOCKET),
+            # TODO: Do something this this value
+            'tls_entrypoint': args.get('tls-entrypoint', TLS_ENTRYPOINT)
         }
 
         env = Environment()
