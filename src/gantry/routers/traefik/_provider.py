@@ -17,6 +17,7 @@ DOCKER_SOCKET = '/var/run/docker.sock'
 SERVICE_FILE = 'proxy-service.yml'
 TLS_ENTRYPOINT = 'webTLS'
 
+
 def _get_service_file() -> str:
     with importlib.resources.open_text(__package__, SERVICE_FILE) as f:
         return f.read()
