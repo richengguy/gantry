@@ -1,0 +1,9 @@
+name: traefik-dynamic-config
+network: test
+router:
+  provider: traefik
+  config: traefik.yml
+  args:
+    dynamic-config: ./configuration
+services:
+  - service

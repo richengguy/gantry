@@ -140,12 +140,15 @@ group definition is being processed:
 The `traefik` router uses [traefik proxy](https://doc.traefik.io/traefik/) for
 passing information to and from the external network to the service containers.
 There is minimal configuration within the service definition beyond ensuring the
-dashboard can be accessed.  The router should be configured using either a YAML
-or TOML [configuration file](https://doc.traefik.io/traefik/providers/file/).
+dashboard can be accessed.  The router's `config` property points to a traefik
+[static configuration file](https://doc.traefik.io/traefik/getting-started/configuration-overview/#configuration-file).
+The `dynamic-config` argument (see below) can be used for additional
+configuration.
 
 The service itself has the following configuraiton arguments:
 
 | Argument | Type | Default | Description |
 | -------- | ---- | ------- | ----------- |
+| `dynamic-config` | `string` | empty string | Specify a folder where any [dynamic configuration files](https://doc.traefik.io/traefik/providers/file/) will be located. |
 | `map-socket` | `bool` | `true` | Map an external Docker socket into the Traefik container as a volume mount. |
 | `socket` | `string` | `/var/run/docker.sock` | Path to the Docker socket Traefik will be using. |
