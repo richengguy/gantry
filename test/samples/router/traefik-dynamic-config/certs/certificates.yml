@@ -1,6 +1,0 @@
-# This file would contain the actual TLS configuration, namely the CA cert and a
-# private key.
-tls:
-  certificates:
-    - certFile: my.cert
-      keyFile: my.key
