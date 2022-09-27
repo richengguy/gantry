@@ -14,5 +14,5 @@ entryPoints:
 
 providers:
   file:
-    directory: /certs/
+    directory: /configuration/
     watch: true
