@@ -66,7 +66,7 @@ def test_router_enable_tls(compile_compose_file: CompileFn):
     assert ports[1] == '443:443'
 
     labels = compose_spec['services']['proxy']['labels']
-    assert 'traefik.http.services.proxy.loadbalancer.server.port' not in labels
+    assert labels['traefik.http.services.proxy.loadbalancer.server.port'] == 80
 
 
 @pytest.mark.parametrize(
