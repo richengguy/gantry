@@ -15,7 +15,6 @@ from ...services import ServiceDefinition
 
 DOCKER_SOCKET = '/var/run/docker.sock'
 SERVICE_FILE = 'proxy-service.yml'
-TLS_ENTRYPOINT = 'webTLS'
 
 
 def _get_service_file() -> str:
