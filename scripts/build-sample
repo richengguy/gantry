@@ -21,5 +21,3 @@ if [[ ! -f $SAMPLE_FOLDER/_build.sh ]]; then
 fi
 
 source $SAMPLE_FOLDER/_build.sh
-
-# gantry build-compose -s samples/$1 -o build/$1.docker
