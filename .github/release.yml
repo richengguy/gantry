@@ -1,0 +1,15 @@
+changelog:
+  exclude:
+    labels:
+      - ignore-in-release-notes
+
+  categories:
+    - title: New Features
+      labels:
+        - feature
+    - title: Bug Fixes
+      labels:
+        - bugfix
+    - title: Other Changes
+      labels:
+        - "*"
