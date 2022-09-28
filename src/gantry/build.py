@@ -58,13 +58,13 @@ def _build_compose_file(service_group: ServiceGroupDefinition) -> ComposeFile:
     if service_group.router.provider not in routers.PROVIDERS:
         raise ComposeServiceBuildError(f'Unknown routing provider `{service_group.router.provider}`.')  # noqa: E501
 
-    router = routers.PROVIDERS[service_group.router.provider]()
     router_args = service_group.router.args.copy()
     router_args['_config-file'] = service_group.router.config.path.name
+    router = routers.PROVIDERS[service_group.router.provider](router_args)
 
     services = map(
         router.register_service,
-        [router.generate_service(router_args)] + list(service_group)
+        [router.generate_service()] + list(service_group)
     )
 
     service_mapping: dict[str, ComposeService] = {}
@@ -182,8 +182,8 @@ def _copy_services_resources(service_group: ServiceGroupDefinition, folder: Path
         path to output folder
     '''
     if services_folder := service_group.folder:
-        router = routers.PROVIDERS[service_group.router.provider]()
-        router.copy_resources(services_folder, folder, service_group.router.args)
+        router = routers.PROVIDERS[service_group.router.provider](service_group.router.args)
+        router.copy_resources(services_folder, folder)
 
     for service in service_group:
         if service.folder is None:
