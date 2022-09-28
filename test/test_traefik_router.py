@@ -58,13 +58,14 @@ def test_router_dynamic_config(compile_services: ServicesFn):
 
 
 @pytest.mark.parametrize(
-    ('sample', 'expected'),
+    ('sample', 'expected', 'has_tls'),
     [
-        ('traefik-default', ['80:80']),
-        ('traefik-enable-tls', ['80:80', '443:443'])
+        ('traefik-default', ['80:80'], False),
+        ('traefik-enable-tls', ['80:80', '443:443'], True)
     ]
 )
-def test_router_enable_tls(sample: str, expected: list[str], compile_compose_file: CompileFn):
+def test_router_enable_tls(sample: str, expected: list[str], has_tls: bool,
+                           compile_compose_file: CompileFn):
     '''Check that TLS is enabled correctly.'''
     compose_spec = compile_compose_file('router', sample)
 
@@ -74,7 +75,14 @@ def test_router_enable_tls(sample: str, expected: list[str], compile_compose_fil
     for service in ['proxy', 'service']:
         labels = compose_spec['services'][service]['labels']
         assert labels[f'traefik.http.services.{service}.loadbalancer.server.port'] == 80
-        assert labels[f'traefik.http.routers.{service}.tls'] is True
+
+        # Enabling TLS also adds an extra 'tls' label to each service.
+        tls_label = f'traefik.http.routers.{service}.tls'
+        if has_tls:
+            assert tls_label in labels
+            assert labels[tls_label] is True
+        else:
+            assert tls_label not in labels
 
 
 @pytest.mark.parametrize(
