@@ -38,7 +38,7 @@ jobs:
         run: |
           conda env create
           conda run -n gantry --live-stream pip install --upgrade pip setuptools
-          conda run -n gantry --live-stream install flit install
+          conda run -n gantry --live-stream flit install
 
       - name: Build '${{ matrix.sample }}'' sample.
         run: |
