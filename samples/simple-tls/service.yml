@@ -1,0 +1,10 @@
+name: simple-tls
+network: internal
+router:
+  provider: traefik
+  config: traefik.yml
+  args:
+    enable-tls: true
+    dynamic-config: ./configuration
+services:
+  - hello-world
