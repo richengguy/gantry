@@ -71,8 +71,10 @@ def test_router_enable_tls(sample: str, expected: list[str], compile_compose_fil
     ports = compose_spec['services']['proxy']['ports']
     assert ports == expected
 
-    labels = compose_spec['services']['proxy']['labels']
-    assert labels['traefik.http.services.proxy.loadbalancer.server.port'] == 80
+    for service in ['proxy', 'service']:
+        labels = compose_spec['services'][service]['labels']
+        assert labels[f'traefik.http.services.{service}.loadbalancer.server.port'] == 80
+        assert labels[f'traefik.http.routers.{service}.tls'] is True
 
 
 @pytest.mark.parametrize(
