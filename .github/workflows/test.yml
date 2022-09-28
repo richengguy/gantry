@@ -22,3 +22,24 @@ jobs:
 
       - name: Run tests.
         run: conda run -n gantry --live-stream pytest
+
+  build-samples:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        sample:
+          - simple-tls
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Build and install gantry.
+        run: |
+          conda env create
+          conda run -n gantry --live-stream pip install --upgrade pip setuptools
+          conda run -n gantry --live-stream install flit install
+
+      - name: Build '${{ matrix.sample }}'' sample.
+        run: |
+          conda run -n gantry --live-stream ./scripts/build-sample ${{ matrix.sample }}
