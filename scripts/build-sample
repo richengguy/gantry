@@ -6,10 +6,20 @@ if [[ $# -ne 1 ]]; then
     exit 1
 fi
 
-if [[ ! -e samples/$1 ]]; then
+if [[ ! -d samples/$1 ]]; then
     echo "No sample named '$1'."
     exit 1
 fi
 
 mkdir -p build
-gantry build-compose -s samples/$1 -o build/$1.docker
+export SAMPLE_FOLDER=samples/$1
+export OUTPUT_FOLDER=build/$1.docker
+
+if [[ ! -f $SAMPLE_FOLDER/_build.sh ]]; then
+    echo "Sample is missing its _build.sh file."
+    exit 1
+fi
+
+source $SAMPLE_FOLDER/_build.sh
+
+# gantry build-compose -s samples/$1 -o build/$1.docker
