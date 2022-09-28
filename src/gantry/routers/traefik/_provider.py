@@ -56,8 +56,6 @@ class TraefikRoutingProvider(RoutingProvider):
             'enable_tls': self.args.get('enable-tls', False),
             'map_socket': self.args.get('map-socket', True),
             'socket_path': self.args.get('socket', DOCKER_SOCKET),
-            # TODO: Do something this this value
-            'tls_entrypoint': self.args.get('tls-entrypoint', TLS_ENTRYPOINT)
         }
 
         env = Environment()
