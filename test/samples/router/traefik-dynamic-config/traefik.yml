@@ -1,3 +1,8 @@
 entryPoints:
   web:
     address: ":80"
+
+providers:
+  file:
+    directory: /configuration/
+    watch: true

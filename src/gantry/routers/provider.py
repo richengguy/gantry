@@ -7,7 +7,22 @@ from ..services import ServiceDefinition
 class RoutingProvider(ABC):
     '''Defines the routing provider for the managed services.'''
 
-    def copy_resources(self, service_folder: Path, output_folder: Path, args: dict):
+    def __init__(self, args: dict) -> None:
+        '''Initialize the routing provider using the provided arguments.
+
+        Parameters
+        ----------
+        args : dict
+            optional arguments used for configuring the routing provider
+        '''
+        self._args = args.copy()
+
+    @property
+    def args(self) -> dict:
+        '''dict: The routing provider's configuration arguments.'''
+        return self._args
+
+    def copy_resources(self, service_folder: Path, output_folder: Path):
         '''Copy any resources need by the routing providing.
 
         The default implementation does nothing.  A provider can override this
@@ -19,22 +34,15 @@ class RoutingProvider(ABC):
             location of the services group definition folder
         output_folder : Path
             location of the services output folder
-        args : dict
-            optional arguments that the service can use to configure itself
         '''
 
     @abstractmethod
-    def generate_service(self, args: dict) -> ServiceDefinition:
+    def generate_service(self) -> ServiceDefinition:
         '''Generate the service definition for the routing provider.
-
-        Parameters
-        ----------
-        args : dict
-            optional arguments that the service can use to configure itself
 
         Returns
         -------
-        dict
+        ServiceDefinition
             a dictionary defining the compose service
         '''
 

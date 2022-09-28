@@ -22,5 +22,10 @@ service-ports:
   http:
     internal: 80
     external: 80
+  {% if enable_tls %}
+  https:
+    internal: 443
+    external: 443
+  {% endif %}
 metadata:
   traefik.http.routers.proxy.service: api@internal

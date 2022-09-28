@@ -11,19 +11,26 @@ CompileFn = Callable[[str, str], ComposeFile]
 ServicesFn = Callable[[str, str], Path]
 
 
-@pytest.mark.parametrize(
-    ('sample', 'expected'),
-    [
-        ('traefik-default', '/var/run/docker.sock'),
-        ('traefik-custom-socket', '/run/users/1001/docker.sock')
-    ]
-)
-def test_router_args(sample: str, expected: str,
-                     compile_compose_file: Callable[[str, str], ComposeFile]):
-    '''Ensure traefik router args are set correctly.'''
-    compose_spec = compile_compose_file('router', sample)
+def test_router_config_render(compile_services: ServicesFn):
+    '''Check that the router's configuration is rendered correctly.'''
+    output_path = compile_services('router', 'traefik-custom-config')
+    assert (output_path / 'traefik-custom.yml').exists()
+
+    # Check that the traefik file sets the network correctly.
+    reader = YAML()
+    with (output_path / 'traefik-custom.yml').open('rt') as f:
+        traefik_file = reader.load(f)
+
+    network = traefik_file['providers']['docker']['network']
+    assert network == 'test'
+
+    # Check that the compose file references the correct traefik file.
+    reader = YAML()
+    with (output_path / 'docker-compose.yml').open('rt') as f:
+        compose_spec: ComposeFile = reader.load(f)
+
     volumes = compose_spec['services']['proxy']['volumes']
-    assert volumes[0] == f'{expected}:/var/run/docker.sock:ro'
+    assert volumes[1] == './traefik-custom.yml:/traefik.yml:ro'
 
 
 def test_router_dynamic_config(compile_services: ServicesFn):
@@ -50,23 +57,44 @@ def test_router_dynamic_config(compile_services: ServicesFn):
     assert certificates['tls']['certificates'][0]['certFile'] == 'my.cert'
 
 
-def test_router_config_render(compile_services: ServicesFn):
-    '''Check that the router's configuration is rendered correctly.'''
-    output_path = compile_services('router', 'traefik-custom-config')
-    assert (output_path / 'traefik-custom.yml').exists()
+@pytest.mark.parametrize(
+    ('sample', 'expected', 'has_tls'),
+    [
+        ('traefik-default', ['80:80'], False),
+        ('traefik-enable-tls', ['80:80', '443:443'], True)
+    ]
+)
+def test_router_enable_tls(sample: str, expected: list[str], has_tls: bool,
+                           compile_compose_file: CompileFn):
+    '''Check that TLS is enabled correctly.'''
+    compose_spec = compile_compose_file('router', sample)
 
-    # Check that the traefik file sets the network correctly.
-    reader = YAML()
-    with (output_path / 'traefik-custom.yml').open('rt') as f:
-        traefik_file = reader.load(f)
+    ports = compose_spec['services']['proxy']['ports']
+    assert ports == expected
 
-    network = traefik_file['providers']['docker']['network']
-    assert network == 'test'
+    for service in ['proxy', 'service']:
+        labels = compose_spec['services'][service]['labels']
+        assert labels[f'traefik.http.services.{service}.loadbalancer.server.port'] == 80
 
-    # Check that the compose file references the correct traefik file.
-    reader = YAML()
-    with (output_path / 'docker-compose.yml').open('rt') as f:
-        compose_spec: ComposeFile = reader.load(f)
+        # Enabling TLS also adds an extra 'tls' label to each service.
+        tls_label = f'traefik.http.routers.{service}.tls'
+        if has_tls:
+            assert tls_label in labels
+            assert labels[tls_label] is True
+        else:
+            assert tls_label not in labels
 
+
+@pytest.mark.parametrize(
+    ('sample', 'expected'),
+    [
+        ('traefik-default', '/var/run/docker.sock'),
+        ('traefik-custom-socket', '/run/users/1001/docker.sock')
+    ]
+)
+def test_router_socket(sample: str, expected: str, compile_compose_file: CompileFn):
+    '''Ensure traefik router args are set correctly.'''
+    compose_spec = compile_compose_file('router', sample)
     volumes = compose_spec['services']['proxy']['volumes']
-    assert volumes[1] == './traefik-custom.yml:/traefik.yml:ro'
+    assert volumes[0] == f'{expected}:/var/run/docker.sock:ro'
+    assert volumes[1] == './traefik.yml:/traefik.yml:ro'

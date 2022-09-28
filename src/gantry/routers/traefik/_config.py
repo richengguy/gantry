@@ -1,6 +1,7 @@
 class TraefikConfig:
     '''Helps generate the labels used to configure Traefik.'''
     def __init__(self) -> None:
+        self._enable_tls: bool = False
         self._port: int | None = None
         self._routes: set[str] | None = None
         self._service: str | None = None
@@ -16,6 +17,16 @@ class TraefikConfig:
         if self._routes is None:
             self._routes = set()
         self._routes.add(route)
+
+    def set_enable_tls(self, enable_tls: bool) -> None:
+        '''Enable TLS termination on this service.
+
+        Parameters
+        ----------
+        enable_tls : bool
+            determines if TLS termination is enabled
+        '''
+        self._enable_tls = enable_tls
 
     def set_port(self, port: int) -> None:
         '''Specify the port the service listens on.
@@ -57,5 +68,8 @@ class TraefikConfig:
 
         if service := self._service:
             labels[f'traefik.http.routers.{name}.service'] = service
+
+        if self._enable_tls:
+            labels[f'traefik.http.routers.{name}.tls'] = True
 
         return labels

@@ -1,0 +1,8 @@
+name: hello-world
+
+entrypoint:
+  routes: [/]
+  listens-on: 8080
+
+environment:
+  NODE_ENV: production

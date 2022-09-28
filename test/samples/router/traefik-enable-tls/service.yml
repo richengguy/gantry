@@ -1,0 +1,9 @@
+name: traefik-enable-tls
+network: test
+router:
+  provider: traefik
+  config: traefik.yml
+  args:
+    enable-tls: true
+services:
+  - service
