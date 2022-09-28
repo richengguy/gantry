@@ -1,4 +1,4 @@
-FROM node:18
+FROM node:18-alpine
 
 COPY index.js /index.js
 USER node
