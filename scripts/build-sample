@@ -1,0 +1,15 @@
+#!/bin/bash
+set -e
+
+if [[ $# -ne 1 ]]; then
+    echo "usage: $0 <sample-name>"
+    exit 1
+fi
+
+if [[ ! -e samples/$1 ]]; then
+    echo "No sample named '$1'."
+    exit 1
+fi
+
+mkdir -p build
+gantry build-compose -s samples/$1 -o build/$1.docker
