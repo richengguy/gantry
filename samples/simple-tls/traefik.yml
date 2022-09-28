@@ -1,6 +1,15 @@
 entryPoints:
-  http:
+  standard:
     address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: secure
+          scheme: https
+          permanent: true
+
+  secure:
+    address: ":443"
 
 api:
   dashboard: true
