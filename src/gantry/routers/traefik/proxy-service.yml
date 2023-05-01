@@ -1,5 +1,5 @@
 name: proxy
-image: traefik:v2.6.1
+image: traefik:v2.10.1
 entrypoint:
   routes:
     - /api
