@@ -1,8 +1,46 @@
 #!/bin/bash
 
+function get_state() {
+    docker compose ps --format json | jq "map(select(.Name == \"$1\"))" | jq -r '.[0].State'
+}
+
 gantry build-compose -s $SAMPLE_FOLDER -o $OUTPUT_FOLDER
 
-# Build the sample docker images and ensure all dependencies can be pulled down.
+# Build the sample docker images and verify it can be brought up successfully.
 cd $OUTPUT_FOLDER
-docker compose pull
 docker compose build
+docker compose up -d
+
+echo "Sleeping for 1 second..."
+sleep 1s
+
+hello_world_state=`get_state hello-world`
+proxy_state=`get_state proxy`
+
+if [[ "$hello_world_state" == "running" && "$proxy_state" == "running" ]];
+then
+    exit_code=0
+else
+    exit_code=1
+fi
+
+docker compose down
+
+report=$(
+cat << SUMMARY
+### Detected States
+
+|Service|State|
+|-------|------|
+|\`hello-world\`|$hello_world_state|
+|\`proxy\`|$proxy_state|
+SUMMARY
+)
+
+if [[ -v GITHUB_STEP_SUMMARY ]]; then
+    echo "$report" >> $GITHUB_STEP_SUMMARY
+else
+    echo "$report"
+fi
+
+exit $exit_code
