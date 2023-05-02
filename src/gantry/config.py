@@ -1,4 +1,4 @@
-from typing import TypedDict, NotRequired
+from typing import TypedDict, NotRequired, cast
 
 from ruamel.yaml import YAML
 
@@ -23,6 +23,10 @@ class _GantryConfig(TypedDict):
     registry: NotRequired[_RegistryConfig]
 
 
+class _ConfigFile(TypedDict):
+    gantry: _GantryConfig
+
+
 class Config:
     '''Stores the serialized Gantry configuration.'''
     def __init__(self, path: PathLike) -> None:
@@ -36,17 +40,19 @@ class Config:
         contents = yaml.load(path)
         errors = validate_object(contents, Schema.CONFIG)
 
+        config = cast(_ConfigFile, contents)['gantry']
+
         if len(errors) > 0:
             raise ConfigFileValidationError(errors)
 
-        if 'registry' not in contents:
-            contents['registry'] = _RegistryConfig(
-                url=contents['forge']['url'],
-                namespace=contents['forge']['owner']
+        if 'registry' not in config:
+            config['registry'] = _RegistryConfig(
+                url=config['forge']['url'],
+                namespace=config['forge']['owner']
             )
 
-        self._forge_properties = contents['forge']
-        self._registry_properties = contents['registry']
+        self._forge_properties = config['forge']
+        self._registry_properties = config['registry']
 
     @property
     def forge_owner(self) -> str:

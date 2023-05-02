@@ -3,12 +3,8 @@
     "$id": "/gantry/schemas/config.json",
     "title": "Gantry Configuration",
     "description": "The gantry configuration file format.",
-    "type": "object",
+    "type":"object",
     "definitions": {
-        "common": {
-            "type": "object",
-            "additionalProperties": false
-        },
         "url": {
             "type": "string",
             "format": "uri",
@@ -18,11 +14,9 @@
     "properties": {
         "gantry": {
             "description": "The gantry configuration object.",
-            "$ref": "#/definitions/common",
             "properties": {
                 "forge": {
                     "description": "Information about the software forge that gantry will connect to.",
-                    "$ref": "#/definitions/common",
                     "properties": {
                         "provider": {
                             "description": "The forge provider.",
@@ -38,11 +32,11 @@
                             "description": "The user account or organization gantry will interact with.",
                             "type": "string"
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "registry": {
                     "description": "The container registery gantry will push to (optional).",
-                    "$ref": "#/definitions/common",
                     "properties": {
                         "url": {
                             "description": "URL of the container registry.",
@@ -52,13 +46,14 @@
                             "description": "The namespace applied to container images.",
                             "type": "string"
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 }
-            }
+            },
+            "required": ["forge"]
         }
     },
     "required": [
         "gantry"
-    ],
-    "additionalProperties": false
+    ]
 }

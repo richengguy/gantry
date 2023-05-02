@@ -15,7 +15,7 @@ def test_basic_config(samples_folder: Path) -> None:
 
 
 def test_container_repo_config(samples_folder: Path) -> None:
-    yaml_file = samples_folder / 'configs' / 'basic.yml'
+    yaml_file = samples_folder / 'configs' / 'container-repo.yml'
     config = Config(yaml_file)
 
     assert config.forge_owner == 'some-org'
