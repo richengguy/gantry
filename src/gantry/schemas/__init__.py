@@ -27,8 +27,10 @@ def get_schema(schema: Schema) -> dict:
         a dictionary with the schema in JSON Schema format
     '''
     schema_file = f'{schema.value}.json'
-    with importlib.resources.open_text(__package__, schema_file) as f:
-        return json.load(f)
+    resource = importlib.resources.files(__package__).joinpath(schema_file)
+    with importlib.resources.as_file(resource) as path:
+        with path.open() as f:
+            return json.load(f)
 
 
 def validate_object(instance: dict, schema: Schema) -> list[ValidationError]:
