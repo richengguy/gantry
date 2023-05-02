@@ -1,4 +1,4 @@
-from typing import TypedDict
+from typing import TypedDict, NotRequired
 
 from ruamel.yaml import YAML
 
@@ -20,7 +20,7 @@ class _RegistryConfig(TypedDict):
 
 class _GantryConfig(TypedDict):
     forge: _ForgeConfig
-    registry: _RegistryConfig
+    registry: NotRequired[_RegistryConfig]
 
 
 class Config:
@@ -35,8 +35,10 @@ class Config:
         schema = get_schema(Schema.CONFIG)
 
         yaml = YAML()
-        contents = yaml.load(path)
+        contents: _GantryConfig = yaml.load(path)
         errors = validate_object(contents, schema)
 
         if len(errors) > 0:
             raise ConfigFileValidationError(errors)
+
+        self._contents = contents
