@@ -3,7 +3,7 @@ from typing import NamedTuple
 
 from jsonschema.exceptions import ValidationError
 
-from ._types import PathLike
+from .._types import PathLike
 
 
 class ServiceManagerException(Exception):

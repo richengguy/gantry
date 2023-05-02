@@ -1,0 +1,8 @@
+gantry:
+  forge:
+    provider: gitea
+    url: https://gitea.example.com
+    owner: some-org
+  registry:
+    url: https://containers.example.com
+    namespace: my-namespace

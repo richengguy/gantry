@@ -1,0 +1,5 @@
+gantry:
+  forge:
+    provider: gitea
+    url: https://gitea.example.com
+    owner: some-org

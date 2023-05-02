@@ -1,0 +1,59 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "/gantry/schemas/config.json",
+    "title": "Gantry Configuration",
+    "description": "The gantry configuration file format.",
+    "type":"object",
+    "definitions": {
+        "url": {
+            "type": "string",
+            "format": "uri",
+            "pattern": "^https?://"
+        }
+    },
+    "properties": {
+        "gantry": {
+            "description": "The gantry configuration object.",
+            "properties": {
+                "forge": {
+                    "description": "Information about the software forge that gantry will connect to.",
+                    "properties": {
+                        "provider": {
+                            "description": "The forge provider.",
+                            "type": "string",
+                            "enum": ["gitea"],
+                            "default": "gitea"
+                        },
+                        "url": {
+                            "description": "The forge's base URL.",
+                            "$ref": "#/definitions/url"
+                        },
+                        "owner": {
+                            "description": "The user account or organization gantry will interact with.",
+                            "type": "string"
+                        }
+                    },
+                    "additionalProperties": false
+                },
+                "registry": {
+                    "description": "The container registery gantry will push to (optional).",
+                    "properties": {
+                        "url": {
+                            "description": "URL of the container registry.",
+                            "$ref": "#/definitions/url"
+                        },
+                        "namespace": {
+                            "description": "The namespace applied to container images.",
+                            "type": "string"
+                        }
+                    },
+                    "additionalProperties": false
+                }
+            },
+            "required": ["forge"]
+        }
+    },
+    "required": [
+        "gantry"
+    ]
+}

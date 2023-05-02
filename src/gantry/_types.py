@@ -1,3 +1,3 @@
-import pathlib
+from pathlib import Path
 
-PathLike = pathlib.Path | str
+PathLike = Path | str

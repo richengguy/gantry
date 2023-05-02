@@ -20,6 +20,28 @@ $ conda activate gantry
 
 You can verify the installation by running `gantry --version`.
 
+## Configuration
+
+> **Important:** This section is still under construction.
+
+All of *gantry*'s runtime configuration can be managed through a `gantry.yml`
+file.  Below is an example configuration:
+
+```yml
+gantry:
+    forge:
+        provider: gitea
+        url: https://gitea.example.com
+        owner: some-org
+    registry:
+        url: https://containers.example.com
+        namespace: my-namespace
+```
+
+The properties for `gitea.forge` are required in the configuration.  If a
+`gitea.registry` is not provided then it will be inferred from the forge
+configuration.
+
 ## Defining Services
 
 All host services are defined by a single [service group](#service-group).  It
