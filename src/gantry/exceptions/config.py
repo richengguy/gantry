@@ -37,3 +37,13 @@ class ConfigFileValidationError(ConfigException):
     def errors(self) -> list[ErrorInfo]:
         '''A list of all detected errors.'''
         return self._errors
+
+
+class InvalidConfigValueError(ConfigException):
+    '''Exception raised when a configuration value is invalid.
+
+    This differs from the :exc:`ConfigFileValidationError` in that it represents
+    an error parsing a value after it has been loaded from a file.
+    '''
+    def __init__(self, msg: str) -> None:
+        super().__init__(msg)

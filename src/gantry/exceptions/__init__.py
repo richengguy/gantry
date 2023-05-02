@@ -1,6 +1,7 @@
 from .config import (
     ConfigException,
-    ConfigFileValidationError
+    ConfigFileValidationError,
+    InvalidConfigValueError,
 )
 
 from .service_manager import (
@@ -8,5 +9,5 @@ from .service_manager import (
     ComposeServiceBuildError,
     InvalidServiceDefinitionError,
     MissingTemplateError,
-    ServiceDefinitionNotFoundError
+    ServiceDefinitionNotFoundError,
 )
