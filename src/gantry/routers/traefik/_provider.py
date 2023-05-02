@@ -18,8 +18,10 @@ SERVICE_FILE = 'proxy-service.yml'
 
 
 def _get_service_file() -> str:
-    with importlib.resources.open_text(__package__, SERVICE_FILE) as f:
-        return f.read()
+    resource = importlib.resources.files(__package__).joinpath(SERVICE_FILE)
+    with importlib.resources.as_file(resource) as path:
+        with path.open() as f:
+            return f.read()
 
 
 def _get_dynamic_config(args: dict) -> Path | None:
