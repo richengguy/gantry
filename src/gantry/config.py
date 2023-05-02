@@ -1,10 +1,10 @@
-from typing import TypedDict, NotRequired, cast
+from typing import TypedDict, NotRequired
 
 from ruamel.yaml import YAML
 
 from ._types import PathLike
 from .exceptions import ConfigFileValidationError
-from .schemas import Schema, get_schema, validate_object
+from .schemas import Schema, validate_object
 
 
 class _ForgeConfig(TypedDict):
@@ -32,11 +32,9 @@ class Config:
         path : path-like
             the path to the configuration file
         '''
-        schema = get_schema(Schema.CONFIG)
-
         yaml = YAML()
-        contents = cast(_GantryConfig, yaml.load(path))
-        errors = validate_object(contents, schema)
+        contents = yaml.load(path)
+        errors = validate_object(contents, Schema.CONFIG)
 
         if len(errors) > 0:
             raise ConfigFileValidationError(errors)
