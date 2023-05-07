@@ -4,7 +4,7 @@ function get_state() {
     docker compose ps --format json | jq "map(select(.Name == \"$1\"))" | jq -r '.[0].State'
 }
 
-gantry build-compose -s $SAMPLE_FOLDER -o $OUTPUT_FOLDER
+gantry configure compose -s $SAMPLE_FOLDER -o $OUTPUT_FOLDER
 
 # Build the sample docker images and verify it can be brought up successfully.
 cd $OUTPUT_FOLDER
