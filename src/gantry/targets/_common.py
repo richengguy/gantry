@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Protocol
 import shutil
 
 from .. import routers
@@ -6,11 +7,76 @@ from .._types import Path
 from ..services import ServiceGroupDefinition
 
 
+class Pipeline:
+    '''A pipeline for processing service groups.'''
+
+    class Stage(Protocol):
+        '''Protocol for any class that can act as a pipeline stage.'''
+
+        def run(self, service_group: ServiceGroupDefinition) -> None:
+            '''Run the pipeline stage on a service group.
+
+            Parameters
+            ----------
+            service_group : :class:`ServiceGroupDefinition`
+                service group
+            '''
+
+    def __init__(self, *, stages: list['Pipeline.Stage'] = []) -> None:
+        '''
+        Parameters
+        ----------
+        stages : list of :class:`Pipeline.Stage`
+            the initial set of stages in the pipeline, defaults to an empty list
+        '''
+        self._stages: list['Pipeline.Stage'] = []
+        self._stages.extend(stages)
+
+    @property
+    def num_stages(self) -> int:
+        '''int: The number of stages in the pipeline.'''
+        return len(self._stages)
+
+    def add_stage(self, stage: 'Pipeline.Stage') -> None:
+        '''Add a stage to the end of the pipeline.
+
+        Parameters
+        ----------
+        stage : :class:`Pipeline.Stage`
+            a pipeline stage
+        '''
+        self._stages.append(stage)
+
+    def run(self, service_group: ServiceGroupDefinition) -> None:
+        '''Run the pipeline on a service group.
+
+        Parameters
+        ----------
+        service_group : :class:`ServiceGroupDefinition`
+            the service group to process with the pipeline
+        '''
+        for stage in self._stages:
+            stage.run(service_group)
+
+
 class Target(ABC):
     '''Defines a build target for a service group.'''
     @abstractmethod
     def build(self, service_group: ServiceGroupDefinition) -> None:
         '''Build the service group.'''
+
+
+class CopyServiceResources:
+    '''Pipeline stage to copy the service resource folders.
+
+    This wraps :func:`copy_service_resources` to allow it to be used as a stage
+    in a build pipeline.
+    '''
+    def __init__(self, folder: Path) -> None:
+        self._folder = folder
+
+    def run(self, service_group: ServiceGroupDefinition) -> None:
+        copy_services_resources(service_group, self._folder)
 
 
 def copy_services_resources(service_group: ServiceGroupDefinition, folder: Path) -> None:

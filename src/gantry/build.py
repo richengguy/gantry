@@ -1,6 +1,6 @@
 from pathlib import Path
 import shutil
-from typing import NamedTuple, Protocol
+from typing import NamedTuple
 
 from . import routers
 from ._compose_spec import ComposeFile, ComposeService
@@ -12,59 +12,6 @@ from .yaml import YamlSerializer
 class ConvertedDefinition(NamedTuple):
     name: str
     description: ComposeService
-
-
-class PipelineStage(Protocol):
-    '''Protocol for any class that can act as a pipeline stage.'''
-
-    def run(self, service_group: ServiceGroupDefinition) -> None:
-        '''Run the pipeline stage on a service group.
-
-        Parameters
-        ----------
-        service_group : :class:`ServiceGroupDefinition`
-            service group
-        '''
-
-
-class Pipeline:
-    '''A pipeline for processing service groups.'''
-
-    def __init__(self, *, stages: list[PipelineStage] = []) -> None:
-        '''
-        Parameters
-        ----------
-        stages : list of :class:`PipelineStage`
-            the initial set of stages in the pipeline, defaults to an empty list
-        '''
-        self._stages: list[PipelineStage] = []
-        self._stages.extend(stages)
-
-    @property
-    def num_stages(self) -> int:
-        '''int: The number of stages in the pipeline.'''
-        return len(self._stages)
-
-    def add_stage(self, stage: PipelineStage) -> None:
-        '''Add a stage to the end of the pipeline.
-
-        Parameters
-        ----------
-        stage : :class:`PipelineStage`
-            a pipeline stage
-        '''
-        self._stages.append(stage)
-
-    def run(self, service_group: ServiceGroupDefinition) -> None:
-        '''Run the pipeline on a service group.
-
-        Parameters
-        ----------
-        service_group : :class:`ServiceGroupDefinition`
-            the service group to process with the pipeline
-        '''
-        for stage in self._stages:
-            stage.run(service_group)
 
 
 def build_services(service_group: ServiceGroupDefinition, output: Path, overwrite: bool = False):
