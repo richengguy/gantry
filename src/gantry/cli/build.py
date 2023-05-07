@@ -1,3 +1,5 @@
+import datetime
+
 import click
 
 from .._types import ProgramOptions
@@ -9,6 +11,19 @@ def _check_mutually_exclusive_args(tag: str | None, build_number: int | None) ->
 
     if has_tag and has_build:
         raise click.ClickException('Cannot specify both "--tag" and "--build-number".')
+
+
+def _generate_version(tag: str | None, build_number: int | None) -> str:
+    _check_mutually_exclusive_args(tag, build_number)
+
+    if tag is not None:
+        return tag
+
+    id = 0
+    if build_number is not None:
+        id = build_number
+
+    return f'{datetime.date.today():%Y%d%m}.{id}'
 
 
 @click.command('build')
@@ -43,4 +58,4 @@ def cmd(options: ProgramOptions,
     automatically generated for the new image, though this can be overriden with
     the "--tag" option.
     '''
-    _check_mutually_exclusive_args(tag, build_number)
+    version = _generate_version(tag, build_number)
