@@ -1,9 +1,12 @@
+import logging
+import sys
+
 import click
 
 from . import build, configure, schemas
 
 from .. import __version__
-from .._types import Path, ProgramOptions
+from .._types import Path, ProgramOptions, LOGGER_NAME
 
 
 @click.group()
@@ -18,6 +21,16 @@ from .._types import Path, ProgramOptions
 @click.pass_context
 def main(ctx: click.Context, services_path: Path):
     '''A container orchestrator for homelabs.'''
+    ch = logging.StreamHandler(sys.stdout)
+    ch.setLevel(logging.DEBUG)
+
+    formatter = logging.Formatter('%(levelname)s :: %(message)s')
+    ch.setFormatter(formatter)
+
+    logger = logging.getLogger(LOGGER_NAME)
+    logger.setLevel(logging.DEBUG)
+    logger.addHandler(ch)
+
     ctx.obj = ProgramOptions(services_path=services_path)
 
 

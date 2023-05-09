@@ -3,8 +3,11 @@ from typing import Protocol
 import shutil
 
 from .. import routers
-from .._types import Path
+from .._types import Path, get_app_logger
 from ..services import ServiceGroupDefinition
+
+
+_logger = get_app_logger('generic-target')
 
 
 class Pipeline:
@@ -76,6 +79,7 @@ class CopyServiceResources:
         self._folder = folder
 
     def run(self, service_group: ServiceGroupDefinition) -> None:
+        _logger.debug('Copying service resources to \'%s\'.', self._folder)
         copy_services_resources(service_group, self._folder)
 
 

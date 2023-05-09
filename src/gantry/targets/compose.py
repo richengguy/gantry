@@ -4,7 +4,7 @@ from ._common import CopyServiceResources, Pipeline, Target
 
 from .. import routers
 from .._compose_spec import ComposeService
-from .._types import Path, PathLike
+from .._types import Path, PathLike, get_app_logger
 from ..exceptions import ComposeServiceBuildError
 from ..services import ServiceDefinition, ServiceGroupDefinition
 from ..yaml import YamlSerializer
@@ -13,6 +13,9 @@ from ..yaml import YamlSerializer
 class ConvertedDefinition(NamedTuple):
     name: str
     description: ComposeService
+
+
+_logger = get_app_logger('compose')
 
 
 def _convert_to_compose_service(service: ServiceDefinition,
@@ -123,6 +126,8 @@ class BuildComposeFile:
         yaml = YamlSerializer()
         yaml.to_file(compose_spec, self._output)
 
+        _logger.debug('Built compose file to \'%s\'', self._output)
+
 
 class BuildRouterConfig:
     '''Pipeline stage to build a router configuration file.'''
@@ -142,6 +147,8 @@ class BuildRouterConfig:
         with config_file.open('wt') as f:
             f.write(router.config.render(context))
 
+        _logger.debug('Built router config to \'%s\'', config_file)
+
 
 class ComposeTarget(Target):
     '''Convert a service group into a Docker Compose file.'''
@@ -160,5 +167,9 @@ class ComposeTarget(Target):
         ])
 
     def build(self, service_group: ServiceGroupDefinition) -> None:
+        _logger.debug('Converting service group to Docker Compose configuration.')
+        if self._overwrite:
+            _logger.debug('Overwriting existing Compose configuration.')
+
         self._output.mkdir(parents=False, exist_ok=self._overwrite)
         self._pipeline.run(service_group)

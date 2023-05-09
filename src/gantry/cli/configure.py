@@ -1,9 +1,9 @@
 import click
 
-from .._types import Path
-from ..build import build_services
+from .._types import Path, get_app_logger
 from ..exceptions import ComposeServiceBuildError, InvalidServiceDefinitionError
 from ..services import ServiceGroupDefinition
+from ..targets import ComposeTarget
 
 
 @click.group('configure')
@@ -30,6 +30,9 @@ def cmd_compose(services: Path, output: Path, force_overwrite: bool):
     The Compose configuration will generate a folder for everything needed to
     bring up all services on a Docker host.  The folder just needs to be placed
     onto the host and then started with `docker compose up -d`.'''
+    logger = get_app_logger()
+    logger.info('Generating a Docker Compose service configuration.')
+
     try:
         service_group = ServiceGroupDefinition(services)
     except InvalidServiceDefinitionError as e:
@@ -40,6 +43,6 @@ def cmd_compose(services: Path, output: Path, force_overwrite: bool):
         raise click.ClickException('Failed to parse service group definition.')
 
     try:
-        build_services(service_group, output, overwrite=force_overwrite)
+        ComposeTarget(output, force_overwrite).build(service_group)
     except ComposeServiceBuildError as e:
         raise click.ClickException(str(e))
