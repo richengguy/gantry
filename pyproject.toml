@@ -14,6 +14,7 @@ dependencies = [
     "docker ~= 6.1",
     "jinja2 ~= 3.1",
     "jsonschema ~= 4.17",
+    "rich ~= 13.3",
     "ruamel.yaml ~= 0.17"
 ]
 
