@@ -5,7 +5,9 @@ from docker.errors import APIError
 
 from ._common import CopyServiceResources, Pipeline, Target
 
-from .._types import Path, PathLike, get_app_logger
+from .._types import Path, PathLike
+from ..exceptions import ClientConnectionError
+from ..logging import get_app_logger
 from ..services import ServiceDefinition, ServiceGroupDefinition
 
 
@@ -18,7 +20,7 @@ class _ImageBuilder:
             self._api = docker.from_env()
         except APIError as e:
             _logger.critical('Failed to create Docker API client.', exc_info=e)
-            raise e
+            raise ClientConnectionError from e
 
         self._folder = folder
         self._registry = registry
@@ -54,11 +56,10 @@ class ImageTarget(Target):
         '''
         super().__init__()
         self._build_folder = Path(build_folder)
-        self._registry = registry
-        self._tag = tag
 
         self._pipeline = Pipeline(stages=[
-            CopyServiceResources(self._build_folder)
+            CopyServiceResources(self._build_folder),
+            BuildDockerImages(self._build_folder, registry, tag)
         ])
 
     def build(self, service_group: ServiceGroupDefinition) -> None:

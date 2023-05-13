@@ -2,7 +2,9 @@ import datetime
 
 import click
 
-from .._types import ProgramOptions
+from ._util import load_service_group
+from .._types import Path, ProgramOptions
+from ..targets import ImageTarget
 
 
 def _check_mutually_exclusive_args(tag: str | None, build_number: int | None) -> None:
@@ -59,3 +61,5 @@ def cmd(options: ProgramOptions,
     the "--tag" option.
     '''
     version = _generate_version(tag, build_number)
+    service_group = load_service_group(options.services_path)
+    ImageTarget('abc', version, Path('./build/test')).build(service_group)
