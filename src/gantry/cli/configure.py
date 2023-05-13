@@ -1,9 +1,10 @@
 import click
 
+from ._util import load_service_group
+
 from .._types import Path
-from ..exceptions import ComposeServiceBuildError, InvalidServiceDefinitionError
+from ..exceptions import ComposeServiceBuildError
 from ..logging import get_app_logger
-from ..services import ServiceGroupDefinition
 from ..targets import ComposeTarget
 
 
@@ -34,14 +35,7 @@ def cmd_compose(services: Path, output: Path, force_overwrite: bool):
     logger = get_app_logger()
     logger.info('Generating a Docker Compose service configuration.')
 
-    try:
-        service_group = ServiceGroupDefinition(services)
-    except InvalidServiceDefinitionError as e:
-        click.secho('Invalid Service Definition', fg='red', bold=True)
-        for err in e.errors:
-            click.echo(err)
-        click.echo()
-        raise click.ClickException('Failed to parse service group definition.')
+    service_group = load_service_group(services)
 
     try:
         ComposeTarget(output, force_overwrite).build(service_group)

@@ -1,25 +1,10 @@
-import logging
-import sys
-
 import click
 
 from . import build, configure, schemas
+from ._util import configure_logger
 
 from .. import __version__
 from .._types import Path, ProgramOptions
-from ..logging import LOGGER_NAME
-
-
-def _configure_logger() -> None:
-    ch = logging.StreamHandler(sys.stdout)
-    ch.setLevel(logging.DEBUG)
-
-    formatter = logging.Formatter('%(levelname)s :: %(message)s')
-    ch.setFormatter(formatter)
-
-    logger = logging.getLogger(LOGGER_NAME)
-    logger.setLevel(logging.DEBUG)
-    logger.addHandler(ch)
 
 
 @click.group()
@@ -34,8 +19,7 @@ def _configure_logger() -> None:
 @click.pass_context
 def main(ctx: click.Context, services_path: Path):
     '''A container orchestrator for homelabs.'''
-    _configure_logger()
-
+    configure_logger()
     ctx.obj = ProgramOptions(services_path=services_path)
 
 
