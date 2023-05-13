@@ -4,8 +4,9 @@ from ._common import CopyServiceResources, Pipeline, Target
 
 from .. import routers
 from .._compose_spec import ComposeService
-from .._types import Path, PathLike, get_app_logger
+from .._types import Path, PathLike
 from ..exceptions import ComposeServiceBuildError
+from ..logging import get_app_logger
 from ..services import ServiceDefinition, ServiceGroupDefinition
 from ..yaml import YamlSerializer
 

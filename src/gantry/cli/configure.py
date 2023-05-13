@@ -1,7 +1,8 @@
 import click
 
-from .._types import Path, get_app_logger
+from .._types import Path
 from ..exceptions import ComposeServiceBuildError, InvalidServiceDefinitionError
+from ..logging import get_app_logger
 from ..services import ServiceGroupDefinition
 from ..targets import ComposeTarget
 

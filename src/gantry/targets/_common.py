@@ -3,7 +3,8 @@ from typing import Protocol
 import shutil
 
 from .. import routers
-from .._types import Path, get_app_logger
+from .._types import Path
+from ..logging import get_app_logger
 from ..services import ServiceGroupDefinition
 
 
