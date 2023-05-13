@@ -4,7 +4,7 @@ from .config import (
     InvalidConfigValueError,
 )
 
-from .service_manager import (
+from .services import (
     ServiceManagerException,
     ComposeServiceBuildError,
     InvalidServiceDefinitionError,
