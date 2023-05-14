@@ -1,5 +1,6 @@
 import logging
 import sys
+from typing import NamedTuple
 
 import click
 
@@ -7,6 +8,10 @@ from .._types import Path, PathLike
 from ..exceptions import InvalidServiceDefinitionError
 from ..logging import LOGGER_NAME
 from ..services import ServiceGroupDefinition
+
+
+class ProgramOptions(NamedTuple):
+    services_path: Path
 
 
 def configure_logger() -> None:
