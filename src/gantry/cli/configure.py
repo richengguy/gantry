@@ -1,10 +1,11 @@
 import click
 
-from ._common import load_service_group
+import rich
+
+from ._common import load_service_group, print_header
 
 from .._types import Path
-from ..exceptions import ComposeServiceBuildError
-from ..logging import get_app_logger
+from ..exceptions import CliException, ComposeServiceBuildError
 from ..targets import ComposeTarget
 
 
@@ -32,12 +33,13 @@ def cmd_compose(services: Path, output: Path, force_overwrite: bool):
     The Compose configuration will generate a folder for everything needed to
     bring up all services on a Docker host.  The folder just needs to be placed
     onto the host and then started with `docker compose up -d`.'''
-    logger = get_app_logger()
-    logger.info('Generating a Docker Compose service configuration.')
+    print_header()
 
     service_group = load_service_group(services)
+
+    rich.print(f'Generating Docker Compose configuration at [blue bold]{output}[/blue bold].')
 
     try:
         ComposeTarget(output, force_overwrite).build(service_group)
     except ComposeServiceBuildError as e:
-        raise click.ClickException(str(e))
+        raise CliException(str(e))

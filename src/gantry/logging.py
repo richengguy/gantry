@@ -1,5 +1,4 @@
 import logging
-from typing import Any, Mapping, MutableMapping
 
 import rich.logging
 
@@ -9,20 +8,17 @@ from ._types import PathLike
 LOGGER_NAME = 'gantry'
 
 
-class _ComponentLogger(logging.LoggerAdapter):
-    def __init__(self, logger: Any, extra: Mapping[str, object]) -> None:
-        super().__init__(logger, extra)
+class _ConsoleFormatter(logging.Formatter):
+    def __init__(self) -> None:
+        super().__init__('%(message)s')
 
-        if 'component' in extra and extra['component'] is not None:
-            self._component = f'[{extra["component"]}] '
+    def format(self, record: logging.LogRecord) -> str:
+        output = super().format(record)
+
+        if hasattr(record, 'component') and record.component is not None:
+            return f' {record.component} -> {output}'
         else:
-            self._component = ''
-
-    def process(self,
-                msg: Any,
-                kwargs: MutableMapping[str, Any]
-                ) -> tuple[Any, MutableMapping[str, Any]]:
-        return '%s%s' % (self._component, msg), kwargs
+            return f' -> {output}'
 
 
 class _ExceptionsFilter(logging.Filter):
@@ -68,11 +64,11 @@ def init_logger(
     logger.setLevel(logging.DEBUG)
 
     # Create the console logging output.
-    ch = rich.logging.RichHandler(show_path=False, show_time=False)
+    ch = rich.logging.RichHandler(show_level=True, show_path=False, show_time=False)
     ch.setLevel(log_level)
     ch.addFilter(_ExceptionsFilter(remove=not show_traceback))
+    ch.setFormatter(_ConsoleFormatter())
 
-    ch.setFormatter(logging.Formatter('%(message)s'))
     logger.addHandler(ch)
 
     # Create the file logger.
@@ -111,4 +107,4 @@ def get_app_logger(component: str | None = None) -> logging.Logger:
     # The adapter implements the same interface as a logger, and from a user's
     # perspective should be exactly the same.
     logger = logging.getLogger(name)
-    return _ComponentLogger(logger, {'component': component})  # type: ignore
+    return logging.LoggerAdapter(logger, {'component': component})  # type: ignore

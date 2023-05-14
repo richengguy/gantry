@@ -17,6 +17,7 @@ _logger = get_app_logger('build-image')
 class _ImageBuilder:
     def __init__(self, folder: Path, registry: str, tag: str) -> None:
         try:
+            _logger.debug('Create Docker API client.')
             self._api = docker.from_env()
         except DockerException as e:
             _logger.critical('Failed to create Docker API client.', exc_info=e)
@@ -28,7 +29,7 @@ class _ImageBuilder:
 
     def build(self, service: ServiceDefinition) -> None:
         image_name = f'{self._registry}/{service.name}:{self._tag}'
-        _logger.debug('Building image %s', image_name)
+        _logger.debug('Building image \'%s\'', image_name)
 
 
 class BuildDockerImages:
@@ -68,7 +69,6 @@ class ImageTarget(Target):
         if self._build_folder.exists():
             _logger.debug('Removing existing build directory \'%s\'.', self._build_folder)
             shutil.rmtree(self._build_folder)
-            self._build_folder.rmdir()
 
         self._build_folder.mkdir(parents=False)
         self._pipeline.run(service_group)

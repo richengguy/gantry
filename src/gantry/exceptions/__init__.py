@@ -1,3 +1,5 @@
+from .cli import CliException
+
 from .config import (
     ConfigException,
     ConfigFileValidationError,
