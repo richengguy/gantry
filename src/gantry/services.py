@@ -9,7 +9,7 @@ from .exceptions import (
     InvalidServiceDefinitionError,
     MissingTemplateError,
     ServiceDefinitionNotFoundError,
-    ServiceManagerException
+    ServiceConfigurationException
 )
 
 from .resources import (
@@ -239,7 +239,7 @@ class ServiceGroupDefinition(_ServiceDefinitionBase):
     def router(self) -> RouterInfo:
         '''The service provider used to route messages between services.'''
         if self.folder is None:
-            raise ServiceManagerException('Group definition not loaded from a folder.')
+            raise ServiceConfigurationException('Group definition not loaded from a folder.')
 
         router = self._definition['router']
         config = TemplateReference(self.folder, router['config'])

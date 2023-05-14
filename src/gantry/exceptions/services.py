@@ -6,17 +6,17 @@ from jsonschema.exceptions import ValidationError
 from .._types import PathLike
 
 
-class ServiceManagerException(Exception):
+class ServiceConfigurationException(Exception):
     '''Base class for all service manager exceptions.'''
     def __init__(self, *args: object) -> None:
         super().__init__(*args)
 
 
-class ComposeServiceBuildError(ServiceManagerException):
+class ComposeServiceBuildError(ServiceConfigurationException):
     '''Exception raised when errors occurs building the Compose services.'''
 
 
-class InvalidServiceDefinitionError(ServiceManagerException):
+class InvalidServiceDefinitionError(ServiceConfigurationException):
     '''Exception raised when a service definition file failed to validate.'''
     class ErrorInfo(NamedTuple):
         path: str
@@ -46,7 +46,7 @@ class InvalidServiceDefinitionError(ServiceManagerException):
         return self._errors
 
 
-class MissingTemplateError(ServiceManagerException):
+class MissingTemplateError(ServiceConfigurationException):
     '''Exception raised when template file is improperly specified.'''
     def __init__(self, path: Path) -> None:
         '''Initialize a new missing template error.
@@ -65,7 +65,7 @@ class MissingTemplateError(ServiceManagerException):
         return self._path
 
 
-class ServiceDefinitionNotFoundError(ServiceManagerException):
+class ServiceDefinitionNotFoundError(ServiceConfigurationException):
     '''Exception raised when a service definition could not be found.'''
 
     def __init__(self, folder: PathLike):

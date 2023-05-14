@@ -9,7 +9,7 @@ from ruamel.yaml import YAML
 
 from ._config import TraefikConfig
 from .. import RoutingProvider
-from ...exceptions import ServiceManagerException
+from ...exceptions import ServiceConfigurationException
 from ...services import ServiceDefinition
 
 
@@ -45,7 +45,7 @@ class TraefikRoutingProvider(RoutingProvider):
 
         resource_path = services_folder / dynamic_config
         if not resource_path.is_dir():
-            raise ServiceManagerException(f'`{dynamic_config}` is not a folder.')
+            raise ServiceConfigurationException(f'`{dynamic_config}` is not a folder.')
 
         output_path = output_folder / resource_path.name
         shutil.copytree(resource_path, output_path)

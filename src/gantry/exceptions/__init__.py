@@ -11,7 +11,7 @@ from .images import (
 )
 
 from .services import (
-    ServiceManagerException,
+    ServiceConfigurationException,
     ComposeServiceBuildError,
     InvalidServiceDefinitionError,
     MissingTemplateError,
