@@ -1,29 +1,14 @@
-import logging
-import sys
 from typing import NamedTuple
 
 import click
 
 from .._types import Path, PathLike
 from ..exceptions import InvalidServiceDefinitionError
-from ..logging import LOGGER_NAME
 from ..services import ServiceGroupDefinition
 
 
 class ProgramOptions(NamedTuple):
     ...
-
-
-def configure_logger() -> None:
-    ch = logging.StreamHandler(sys.stdout)
-    ch.setLevel(logging.DEBUG)
-
-    formatter = logging.Formatter('%(levelname)s :: %(message)s')
-    ch.setFormatter(formatter)
-
-    logger = logging.getLogger(LOGGER_NAME)
-    logger.setLevel(logging.DEBUG)
-    logger.addHandler(ch)
 
 
 def load_service_group(services_path: PathLike) -> ServiceGroupDefinition:

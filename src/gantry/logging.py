@@ -1,6 +1,10 @@
 import logging
 from typing import Any, Mapping, MutableMapping
 
+import rich.logging
+
+from ._types import PathLike
+
 
 LOGGER_NAME = 'gantry'
 
@@ -19,6 +23,65 @@ class _ComponentLogger(logging.LoggerAdapter):
                 kwargs: MutableMapping[str, Any]
                 ) -> tuple[Any, MutableMapping[str, Any]]:
         return '%s%s' % (self._component, msg), kwargs
+
+
+class _ExceptionsFilter(logging.Filter):
+    # Implementation based off of https://stackoverflow.com/a/54605728
+
+    def __init__(self, *, remove: bool) -> None:
+        super().__init__(LOGGER_NAME)
+        self._remove = remove
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if self._remove:
+            record._orig_exc_info = record.exc_info
+            record.exc_info = None
+            return True
+
+        if hasattr(record, '_orig_exc_info'):
+            record.exc_info = record._orig_exc_info
+            del record._orig_exc_info
+
+        return True
+
+
+def init_logger(
+        *,
+        log_level: int = logging.INFO,
+        logfile: PathLike | None = None,
+        show_traceback: bool = False
+        ) -> None:
+    '''Initialize the application logger.
+
+    This should only be called once when the application first starts.
+
+    Parameters
+    ----------
+    default_level : int
+        specify the logging level; defaults to 'info'
+    logfile : path-like, optional
+        write the logs to a file
+    show_traceback : bool
+        show exception traceback in the log output
+    '''
+    logger = logging.getLogger(LOGGER_NAME)
+    logger.setLevel(logging.DEBUG)
+
+    # Create the console logging output.
+    ch = rich.logging.RichHandler(show_path=False, show_time=False)
+    ch.setLevel(log_level)
+    ch.addFilter(_ExceptionsFilter(remove=not show_traceback))
+
+    ch.setFormatter(logging.Formatter('%(message)s'))
+    logger.addHandler(ch)
+
+    # Create the file logger.
+    if logfile is not None:
+        fh = logging.FileHandler(logfile, 'w')
+        fh.setLevel(logging.DEBUG)
+        fh.setFormatter(logging.Formatter('{levelname: <8} - {message}', style='{'))
+        fh.addFilter(_ExceptionsFilter(remove=False))
+        logger.addHandler(fh)
 
 
 def get_app_logger(component: str | None = None) -> logging.Logger:
