@@ -4,6 +4,7 @@ import click
 
 from ._common import ProgramOptions, load_service_group
 from .._types import Path
+from ..exceptions import ImageTargetException
 from ..targets import ImageTarget
 
 
@@ -47,19 +48,29 @@ def _generate_version(tag: str | None, build_number: int | None) -> str:
     ),
     type=int
 )
+@click.argument(
+    'services_path',
+    metavar='PATH',
+    type=click.Path(file_okay=False, dir_okay=True, path_type=Path)
+)
 @click.argument('services', metavar='[SERVICE]...', nargs=-1)
 @click.pass_obj
 def cmd(options: ProgramOptions,
         tag: str | None,
         build_number: int | None,
+        services_path: Path,
         services: tuple[str]) -> None:
-    '''Build a SERVICE container image.
+    '''Build the images for a service group.
 
-    By default, the command will build images for all services. Specifying the
-    individual SERVICE will build just that image.  A 'YYYYMMDD.###' tag will be
-    automatically generated for the new image, though this can be overriden with
-    the "--tag" option.
+    By default, the command will build images for all services for the service
+    group at PATH. Specifying the individual SERVICE will build just that image.
+
+    A 'YYYYMMDD.###' tag will be automatically generated for the new image. This
+    can be overriden with the "--tag" option.
     '''
     version = _generate_version(tag, build_number)
-    service_group = load_service_group(options.services_path)
-    ImageTarget('abc', version, Path('./build/test')).build(service_group)
+    service_group = load_service_group(services_path)
+    try:
+        ImageTarget('abc', version, Path('./build/test')).build(service_group)
+    except ImageTargetException:
+        raise click.ClickException('Failed to build serivce images.')

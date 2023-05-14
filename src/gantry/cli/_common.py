@@ -11,7 +11,7 @@ from ..services import ServiceGroupDefinition
 
 
 class ProgramOptions(NamedTuple):
-    services_path: Path
+    ...
 
 
 def configure_logger() -> None:

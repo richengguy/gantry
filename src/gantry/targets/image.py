@@ -1,7 +1,7 @@
 import shutil
 
 import docker
-from docker.errors import APIError
+from docker.errors import DockerException
 
 from ._common import CopyServiceResources, Pipeline, Target
 
@@ -18,7 +18,7 @@ class _ImageBuilder:
     def __init__(self, folder: Path, registry: str, tag: str) -> None:
         try:
             self._api = docker.from_env()
-        except APIError as e:
+        except DockerException as e:
             _logger.critical('Failed to create Docker API client.', exc_info=e)
             raise ClientConnectionError from e
 
