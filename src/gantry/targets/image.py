@@ -1,7 +1,12 @@
+import json
 import shutil
+from typing import Generator
 
 import docker
+from docker.constants import DEFAULT_UNIX_SOCKET
 from docker.errors import DockerException
+
+from rich.progress import Progress, SpinnerColumn, track
 
 from ._common import CopyServiceResources, Pipeline, Target
 
@@ -18,7 +23,7 @@ class _ImageBuilder:
     def __init__(self, folder: Path, registry: str, tag: str) -> None:
         try:
             _logger.debug('Create Docker API client.')
-            self._api = docker.from_env()
+            self._api = docker.APIClient(base_url=DEFAULT_UNIX_SOCKET)
         except DockerException as e:
             _logger.critical('Failed to create Docker API client.', exc_info=e)
             raise ClientConnectionError from e
@@ -29,7 +34,36 @@ class _ImageBuilder:
 
     def build(self, service: ServiceDefinition) -> None:
         image_name = f'{self._registry}/{service.name}:{self._tag}'
-        _logger.debug('Building image \'%s\'', image_name)
+        dockerfile_folder = (self._folder / service.name).absolute().as_posix()
+
+        _logger.debug('Building image \'%s\' from \'%s\'', image_name, dockerfile_folder)
+
+        # api_response: Generator[bytes, None, None] = self._api.build(path=dockerfile_folder,
+        #                                                              tag=image_name,
+        #                                                              rm=True)
+
+        with Progress(SpinnerColumn(), transient=True) as progress:
+            progress.add_task(f'Build {service.name}', start=False)
+            import time
+            for i in range(3):
+                time.sleep(1)
+
+            # for output in api_response:
+            #     lines = output.splitlines()
+            #     for line in lines:
+            #         obj: dict[str, str] = json.loads(line)
+            #         if text := obj.get('stream'):
+            #             progress.log(text.strip(), highlight=False)
+            progress.stop()
+
+        # output: bytes
+        # for output in self._api.build(path=dockerfile_folder, tag=image_name, rm=True):
+        #     parts = output.splitlines()
+        #     _console.log(output)
+        #     for part in parts:
+        #         obj: dict[str, str] = json.loads(part)
+        #         if text := obj.get('stream'):
+        #             _console.log(text.strip(), highlight=False)
 
 
 class BuildDockerImages:
@@ -38,8 +72,10 @@ class BuildDockerImages:
         self._builder = _ImageBuilder(build_folder, registry, tag)
 
     def run(self, service_group: ServiceGroupDefinition) -> None:
-        for service in service_group:
+        import time
+        for service in track(service_group, 'Building...'):
             self._builder.build(service)
+            time.sleep(1)
 
 
 class ImageTarget(Target):

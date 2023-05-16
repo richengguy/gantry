@@ -53,17 +53,12 @@ def _generate_version(tag: str | None, build_number: int | None) -> str:
     metavar='PATH',
     type=click.Path(file_okay=False, dir_okay=True, path_type=Path)
 )
-@click.argument('services', metavar='[SERVICE]...', nargs=-1)
 @click.pass_obj
 def cmd(options: ProgramOptions,
         tag: str | None,
         build_number: int | None,
-        services_path: Path,
-        services: tuple[str]) -> None:
-    '''Build the images for a service group.
-
-    By default, the command will build images for all services for the service
-    group at PATH. Specifying the individual SERVICE will build just that image.
+        services_path: Path) -> None:
+    '''Build the container images for a service group.
 
     A 'YYYYMMDD.###' tag will be automatically generated for the new image. This
     can be overriden with the "--tag" option.

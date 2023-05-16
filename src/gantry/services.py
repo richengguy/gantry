@@ -254,6 +254,11 @@ class ServiceGroupDefinition(_ServiceDefinitionBase):
             for name in self._definition['services']
         }
 
+    def __len__(self) -> int:
+        if self.folder is None:
+            return 0
+        return len(self._definition['services'])
+
     def __iter__(self) -> Iterator[ServiceDefinition]:
         if self.folder is None:
             return
