@@ -2,9 +2,9 @@ import datetime
 
 import click
 
-from ._common import ProgramOptions, load_service_group
+from ._common import ProgramOptions, load_service_group, print_header
 from .._types import Path
-from ..exceptions import ImageTargetException
+from ..exceptions import CliException, ImageTargetException
 from ..targets import ImageTarget
 
 
@@ -68,9 +68,10 @@ def cmd(options: ProgramOptions,
     A 'YYYYMMDD.###' tag will be automatically generated for the new image. This
     can be overriden with the "--tag" option.
     '''
+    print_header()
     version = _generate_version(tag, build_number)
     service_group = load_service_group(services_path)
     try:
         ImageTarget('abc', version, Path('./build/test')).build(service_group)
     except ImageTargetException:
-        raise click.ClickException('Failed to build serivce images.')
+        raise CliException('Failed to build serivce images.')
