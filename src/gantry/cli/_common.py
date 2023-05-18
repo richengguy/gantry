@@ -5,12 +5,14 @@ import click
 import rich
 
 from .._types import Path, PathLike
+from ..config import Config
 from ..exceptions import InvalidServiceDefinitionError
 from ..services import ServiceGroupDefinition
 
 
 class ProgramOptions(NamedTuple):
-    ...
+    config: Config | None
+    '''The program's configuration data.  Will be "None" if it isn't available.'''
 
 
 def load_service_group(services_path: PathLike) -> ServiceGroupDefinition:

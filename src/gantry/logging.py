@@ -46,7 +46,7 @@ def init_logger(
         log_level: int = logging.WARNING,
         logfile: PathLike | None = None,
         show_traceback: bool = False
-        ) -> None:
+        ) -> logging.Logger:
     '''Initialize the application logger.
 
     This should only be called once when the application first starts.
@@ -78,6 +78,8 @@ def init_logger(
         fh.setFormatter(logging.Formatter('{levelname: <8} - {message}', style='{'))
         fh.addFilter(_ExceptionsFilter(remove=False))
         logger.addHandler(fh)
+
+    return logger
 
 
 def get_app_logger(component: str | None = None) -> logging.Logger:
