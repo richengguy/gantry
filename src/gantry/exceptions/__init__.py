@@ -1,11 +1,19 @@
+from .cli import CliException
+
 from .config import (
     ConfigException,
     ConfigFileValidationError,
     InvalidConfigValueError,
 )
 
-from .service_manager import (
-    ServiceManagerException,
+from .images import (
+    ImageTargetException,
+    ClientConnectionError,
+    ServiceImageBuildError,
+)
+
+from .services import (
+    ServiceConfigurationException,
     ComposeServiceBuildError,
     InvalidServiceDefinitionError,
     MissingTemplateError,

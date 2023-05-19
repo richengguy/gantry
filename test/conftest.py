@@ -20,7 +20,7 @@ def compile_compose_file(samples_folder: Path, tmp_path: Path) -> Callable[[str,
         runner = CliRunner()
         sample_path = samples_folder / folder / sample
         with runner.isolated_filesystem(temp_dir=tmp_path) as td:
-            result = runner.invoke(cli.main, ['build-compose', '-s', sample_path.as_posix()])
+            result = runner.invoke(cli.main, ['configure', 'compose', '-s', sample_path.as_posix()])
             compose_file = Path(td) / 'services.docker' / 'docker-compose.yml'
 
             click.echo(result.stdout)
@@ -41,7 +41,7 @@ def compile_services(samples_folder: Path, tmp_path: Path) -> Callable[[str, str
         runner = CliRunner()
         sample_path = samples_folder / folder / sample
         with runner.isolated_filesystem(temp_dir=tmp_path) as td:
-            result = runner.invoke(cli.main, ['build-compose', '-s', sample_path.as_posix()])
+            result = runner.invoke(cli.main, ['configure', 'compose', '-s', sample_path.as_posix()])
             output_path = Path(td) / 'services.docker'
 
             click.echo(result.stdout)

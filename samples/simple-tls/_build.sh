@@ -4,7 +4,7 @@ function get_state() {
     docker compose ps --format json | jq "map(select(.Name == \"$1\"))" | jq -r '.[0].State'
 }
 
-gantry build-compose -s $SAMPLE_FOLDER -o $OUTPUT_FOLDER
+gantry configure compose -s $SAMPLE_FOLDER -o $OUTPUT_FOLDER
 
 # Build the sample docker images and verify it can be brought up successfully.
 cd $OUTPUT_FOLDER
@@ -25,22 +25,5 @@ else
 fi
 
 docker compose down
-
-report=$(
-cat << SUMMARY
-### Detected States
-
-|Service|State|
-|-------|------|
-|\`hello-world\`|$hello_world_state|
-|\`proxy\`|$proxy_state|
-SUMMARY
-)
-
-if [[ -v GITHUB_STEP_SUMMARY ]]; then
-    echo "$report" >> $GITHUB_STEP_SUMMARY
-else
-    echo "$report"
-fi
 
 exit $exit_code
