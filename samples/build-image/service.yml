@@ -1,0 +1,12 @@
+name: build-image
+
+services:
+  - simple-app
+
+# NOTE: The network and router are not used in this example.
+network: internal
+router:
+  provider: traefik
+  config: traefik.yml
+  args:
+    enable-tls: true

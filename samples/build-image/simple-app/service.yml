@@ -1,0 +1,6 @@
+name: simple-app
+
+# Note: The entrypoint is unused.
+entrypoint:
+  routes: [/]
+  listens-on: 8080
