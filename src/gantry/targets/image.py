@@ -182,7 +182,12 @@ class BuildDockerImages:
 
 class ImageTarget(Target):
     '''Build the container images for a service group.'''
-    def __init__(self, registry: str | None, tag: str, build_folder: PathLike) -> None:
+    def __init__(self,
+                 registry: str | None,
+                 tag: str,
+                 build_folder: PathLike,
+                 *,
+                 skip_build: bool = False) -> None:
         '''
         Parameters
         ----------
@@ -193,14 +198,21 @@ class ImageTarget(Target):
             the image tag; often this will be the build verison
         build_folder : path-like
             path to the build folder when building the images
+        skip_build : bool
+            if ``True``, don't perform the Docker build
         '''
         super().__init__()
         self._build_folder = Path(build_folder)
 
-        self._pipeline = Pipeline(stages=[
-            CopyServiceResources(self._build_folder),
-            BuildDockerImages(self._build_folder, registry, tag)
-        ])
+        stages: list[Pipeline.Stage] = []
+        stages.append(CopyServiceResources(self._build_folder))
+
+        if skip_build:
+            _logger.info('Docker build stage will be skipped.')
+        else:
+            stages.append(BuildDockerImages(self._build_folder, registry, tag))
+
+        self._pipeline = Pipeline(stages=stages)
 
     def build(self, service_group: ServiceGroupDefinition) -> None:
         _logger.debug('Building images for service group.')
@@ -209,5 +221,5 @@ class ImageTarget(Target):
             _logger.debug('Removing existing build directory \'%s\'.', self._build_folder)
             shutil.rmtree(self._build_folder)
 
-        self._build_folder.mkdir(parents=False)
+        self._build_folder.mkdir(parents=True)
         self._pipeline.run(service_group)

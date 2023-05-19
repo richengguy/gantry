@@ -49,6 +49,24 @@ def _generate_version(tag: str | None, build_number: int | None) -> str:
     ),
     type=int
 )
+@click.option(
+    '--skip-build', '-s',
+    is_flag=True,
+    help=(
+        'Skip the actual Docker build step.  This is useful if Docker will be '
+        'called by another process and only the files are required.'
+    )
+)
+@click.option(
+    '--output', '-o', 'output_path',
+    metavar='OUTPUT',
+    help=(
+        'Build folder that contains the Dockerfiles and associated files. '
+        'This defaults to ./build/services.dockerfiles'
+    ),
+    default='./build/services.dockerfiles',
+    type=click.Path(file_okay=False, dir_okay=True, path_type=Path)
+)
 @click.argument(
     'services_path',
     metavar='PATH',
@@ -58,6 +76,8 @@ def _generate_version(tag: str | None, build_number: int | None) -> str:
 def cmd(options: ProgramOptions,
         tag: str | None,
         build_number: int | None,
+        skip_build: bool,
+        output_path: Path,
         services_path: Path) -> None:
     '''Build the container images for a service group.
 
@@ -75,6 +95,6 @@ def cmd(options: ProgramOptions,
     version = _generate_version(tag, build_number)
     service_group = load_service_group(services_path)
     try:
-        ImageTarget(registry, version, Path('./build/test')).build(service_group)
+        ImageTarget(registry, version, output_path, skip_build=skip_build).build(service_group)
     except ImageTargetException:
         raise CliException('Failed to build service images.')
