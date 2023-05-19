@@ -15,7 +15,8 @@ dependencies = [
     "jinja2 ~= 3.1",
     "jsonschema ~= 4.17",
     "rich ~= 13.3",
-    "ruamel.yaml ~= 0.17"
+    "ruamel.yaml ~= 0.17",
+    "urllib3 ~= 2.0"
 ]
 
 [project.optional-dependencies]
