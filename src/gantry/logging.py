@@ -43,7 +43,7 @@ class _ExceptionsFilter(logging.Filter):
 
 def init_logger(
         *,
-        log_level: int = logging.WARNING,
+        log_level: int = logging.INFO,
         logfile: PathLike | None = None,
         show_traceback: bool = False
         ) -> logging.Logger:
@@ -54,7 +54,7 @@ def init_logger(
     Parameters
     ----------
     default_level : int
-        specify the logging level; defaults to 'warning'
+        specify the logging level; defaults to 'info'
     logfile : path-like, optional
         write the logs to a file
     show_traceback : bool
