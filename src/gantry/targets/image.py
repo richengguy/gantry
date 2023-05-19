@@ -1,3 +1,4 @@
+import json
 import shutil
 from typing import Iterator
 
@@ -180,6 +181,26 @@ class BuildDockerImages:
             self._builder.build(service, status_reporter.get_build_status_reporter())
 
 
+class GenerateManifestFile:
+    '''Generate a manifest file that specifies the versions of each service.'''
+    def __init__(self, build_folder: Path, registry: str | None, tag: str) -> None:
+        self._build_folder = build_folder
+        self._registry = registry
+        self._tag = tag
+
+    def run(self, service_group: ServiceGroupDefinition) -> None:
+        manifest: list[dict[str, str]] = []
+        for service in service_group:
+            manifest.append({
+                'image': _create_image_name(self._registry, self._tag, service),
+                'service': service.name
+            })
+
+        manifest_json = self._build_folder / 'manifest.json'
+        with manifest_json.open('wt') as f:
+            json.dump(manifest, f, indent=2)
+
+
 class ImageTarget(Target):
     '''Build the container images for a service group.'''
     def __init__(self,
@@ -206,6 +227,7 @@ class ImageTarget(Target):
 
         stages: list[Pipeline.Stage] = []
         stages.append(CopyServiceResources(self._build_folder))
+        stages.append(GenerateManifestFile(self._build_folder, registry, tag))
 
         if skip_build:
             _logger.info('Docker build stage will be skipped.')
