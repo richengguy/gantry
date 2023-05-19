@@ -26,21 +26,4 @@ fi
 
 docker compose down
 
-report=$(
-cat << SUMMARY
-### Detected States
-
-|Service|State|
-|-------|------|
-|\`hello-world\`|$hello_world_state|
-|\`proxy\`|$proxy_state|
-SUMMARY
-)
-
-if [[ -v GITHUB_STEP_SUMMARY ]]; then
-    echo "$report" >> $GITHUB_STEP_SUMMARY
-else
-    echo "$report"
-fi
-
 exit $exit_code
