@@ -1,4 +1,3 @@
-import json
 import shutil
 from typing import Iterator
 
@@ -16,16 +15,24 @@ from rich.progress import (
     TimeElapsedColumn
 )
 from rich.table import Table
+from rich.text import Text
 
 from ._common import CopyServiceResources, Pipeline, Target
 
 from .._types import Path, PathLike
-from ..exceptions import ClientConnectionError
+from ..exceptions import ClientConnectionError, ServiceImageBuildError
 from ..logging import get_app_logger
 from ..services import ServiceDefinition, ServiceGroupDefinition
 
 
 _logger = get_app_logger('build-image')
+
+
+def _create_image_name(registry: str | None, tag: str, service: ServiceDefinition) -> str:
+    image_name = f'{service.name}:{tag}'
+    if registry is not None:
+        image_name = f'{registry}/{image_name}'
+    return image_name
 
 
 class _BuildStatus:
@@ -46,21 +53,28 @@ class _BuildStatus:
     def __init__(self, build_progress: Progress, build_output: Table) -> None:
         self._build_output = build_output
         self._build_progress = build_progress
+        self._had_error = False
         self._task_id = TaskID(-1)
 
     def _build_started(self, image: str) -> None:
         self._task_id = self._build_progress.add_task('', image=image, start=True, total=None)
 
     def _build_complete(self) -> None:
-        self._build_progress.update(self._task_id, total=1, completed=True)
+        self._build_progress.update(self._task_id, total=1, completed=not self._had_error)
         self._build_progress.stop_task(self._task_id)
 
     def report_start(self, image: str) -> '_ContextWrapper':
         return _BuildStatus._ContextWrapper(image, self)
 
+    def log_error(self, error: str) -> None:
+        text = Text.from_ansi(error)
+        _logger.error('Error: %s', text.plain.strip())
+        self._had_error = True
+
     def log_output(self, log: str) -> None:
-        _logger.debug('<<Docker>> %s', log)
-        self._build_output.add_row(log)
+        text = Text.from_ansi(log)
+        _logger.debug('<<Docker>> %s', text.plain.strip())
+        self._build_output.add_row(text)
         self._build_progress.update(self._task_id)
 
 
@@ -117,7 +131,7 @@ class _OverallProcessingStatus:
 
 
 class _ImageBuilder:
-    def __init__(self, folder: Path, registry: str, tag: str) -> None:
+    def __init__(self, folder: Path, registry: str | None, tag: str) -> None:
         try:
             _logger.debug('Create Docker API client.')
             self._api = docker.APIClient(base_url=DEFAULT_UNIX_SOCKET)
@@ -130,30 +144,33 @@ class _ImageBuilder:
         self._tag = tag
 
     def build(self, service: ServiceDefinition, build_status: _BuildStatus) -> None:
-        image_name = f'{self._registry}/{service.name}:{self._tag}'
         dockerfile_folder = (self._folder / service.name).absolute().as_posix()
+        image_name = _create_image_name(self._registry, self._tag, service)
 
         _logger.debug('Building image \'%s\' from \'%s\'', image_name, dockerfile_folder)
 
-        response: Iterator[bytes] = self._api.build(path=dockerfile_folder, tag=image_name, rm=True)
+        response: Iterator[dict[str, str]] = self._api.build(path=dockerfile_folder,
+                                                             tag=image_name,
+                                                             rm=True,
+                                                             decode=True)
 
-        # The API reponse is JSON formatted with *multiple* JSON objects being
-        # returned in the same newline-terminated string.  The code below is
-        # just splitting up the reponse into its individual lines and then
-        # logging them if the object contains a 'stream' property.
+        # The API contains a 'stream' field that contains the output from the
+        # Docker API.  An 'error' field will be present if there was a build
+        # error.
 
         with build_status.report_start(image_name) as reporter:
-            for segment in response:
-                lines = segment.splitlines()
-                for line in lines:
-                    json_obj: dict[str, str] = json.loads(line)
-                    if stream := json_obj.get('stream'):
-                        reporter.log_output(stream.strip())
+            for item in response:
+                if stream := item.get('stream'):
+                    reporter.log_output(stream.strip())
+
+                if error := item.get('error'):
+                    reporter.log_error(error)
+                    raise ServiceImageBuildError()
 
 
 class BuildDockerImages:
     '''Build Docker images for each service in a service group.'''
-    def __init__(self, build_folder: Path, registry: str, tag: str) -> None:
+    def __init__(self, build_folder: Path, registry: str | None, tag: str) -> None:
         self._builder = _ImageBuilder(build_folder, registry, tag)
 
     def run(self, service_group: ServiceGroupDefinition) -> None:
@@ -165,12 +182,13 @@ class BuildDockerImages:
 
 class ImageTarget(Target):
     '''Build the container images for a service group.'''
-    def __init__(self, registry: str, tag: str, build_folder: PathLike) -> None:
+    def __init__(self, registry: str | None, tag: str, build_folder: PathLike) -> None:
         '''
         Parameters
         ----------
-        registry : str
-            name of the registry the images should be pushed to
+        registry : str or ``None``
+            name of the registry the images should be pushed to; set to ``None``
+            if the image has is not being pushed to a container registry
         tag : str
             the image tag; often this will be the build verison
         build_folder : path-like

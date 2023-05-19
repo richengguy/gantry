@@ -5,6 +5,7 @@ import click
 from ._common import ProgramOptions, load_service_group, print_header
 from .._types import Path
 from ..exceptions import CliException, ImageTargetException
+from ..logging import get_app_logger
 from ..targets import ImageTarget
 
 
@@ -13,7 +14,7 @@ def _check_mutually_exclusive_args(tag: str | None, build_number: int | None) ->
     has_build = build_number is not None
 
     if has_tag and has_build:
-        raise click.ClickException('Cannot specify both "--tag" and "--build-number".')
+        raise CliException('Cannot specify both "--tag" and "--build-number".')
 
 
 def _generate_version(tag: str | None, build_number: int | None) -> str:
@@ -48,14 +49,6 @@ def _generate_version(tag: str | None, build_number: int | None) -> str:
     ),
     type=int
 )
-@click.option(
-    '--print-tag',
-    is_flag=True,
-    help=(
-        'Print the tag that will be used as the version numbers for the built '
-        'service images to stdout.'
-    )
-)
 @click.argument(
     'services_path',
     metavar='PATH',
@@ -65,23 +58,23 @@ def _generate_version(tag: str | None, build_number: int | None) -> str:
 def cmd(options: ProgramOptions,
         tag: str | None,
         build_number: int | None,
-        print_tag: bool,
         services_path: Path) -> None:
     '''Build the container images for a service group.
 
     A 'YYYYMMDD.###' tag will be automatically generated for the new image. This
     can be overriden with the "--tag" option.
     '''
+    print_header()
 
-    if not print_tag:
-        print_header()
-
-    if options.config is None:
-        raise CliException('Cannot build without a gantry configuration file.')
+    if config := options.config:
+        registry = config.registry_namespace
+    else:
+        get_app_logger().info('Performing image build without a gantry configuration.')
+        registry = None
 
     version = _generate_version(tag, build_number)
     service_group = load_service_group(services_path)
     try:
-        ImageTarget('abc', version, Path('./build/test')).build(service_group)
+        ImageTarget(registry, version, Path('./build/test')).build(service_group)
     except ImageTargetException:
-        raise CliException('Failed to build serivce images.')
+        raise CliException('Failed to build service images.')
