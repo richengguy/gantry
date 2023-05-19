@@ -2,9 +2,9 @@ import json
 import shutil
 from typing import Iterator
 
-import docker
-from docker.constants import DEFAULT_UNIX_SOCKET
-from docker.errors import DockerException
+import docker  # type: ignore
+from docker.constants import DEFAULT_UNIX_SOCKET  # type: ignore
+from docker.errors import DockerException  # type: ignore
 
 from rich.console import Group
 from rich.live import Live
