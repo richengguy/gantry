@@ -5,7 +5,7 @@ import click
 
 import rich
 
-from . import build, configure, schemas
+from . import build, configure, forge, schemas
 from ._common import ProgramOptions
 
 from .. import __version__
@@ -58,4 +58,5 @@ def main(ctx: click.Context, config_file: Path | None, debug: bool, logfile: Pat
 
 main.add_command(build.cmd)
 main.add_command(configure.cmd)
+main.add_command(forge.cmd)
 main.add_command(schemas.cmd)
