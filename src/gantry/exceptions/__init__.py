@@ -6,6 +6,11 @@ from .config import (
     InvalidConfigValueError,
 )
 
+from .forge import (
+    ForgeError,
+    CannotObtainForgeAuthError,
+)
+
 from .images import (
     ImageTargetException,
     ClientConnectionError,
