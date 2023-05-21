@@ -15,8 +15,8 @@ from ..exceptions import ConfigException, CliException
 from ..logging import init_logger
 
 
-def _load_config_file(config_file: Path | None) -> Config | None:
-    if config_file is None:
+def _load_config_file(config_file: Path) -> Config | None:
+    if not config_file.exists():
         return None
 
     try:
@@ -30,7 +30,8 @@ def _load_config_file(config_file: Path | None) -> Config | None:
 @click.option(
     '--config', '-c', 'config_file',
     help='Gantry configuration file.',
-    type=click.Path(file_okay=True, dir_okay=False, path_type=Path)
+    default='gantry.yml',
+    type=click.Path(file_okay=True, dir_okay=False, exists=False, path_type=Path)
 )
 @click.option('--debug', '-d', help='Enable debugging output.', is_flag=True)
 @click.option(
@@ -40,7 +41,7 @@ def _load_config_file(config_file: Path | None) -> Config | None:
 )
 @click.version_option(version=__version__)
 @click.pass_context
-def main(ctx: click.Context, config_file: Path | None, debug: bool, logfile: Path | None) -> None:
+def main(ctx: click.Context, config_file: Path, debug: bool, logfile: Path | None) -> None:
     '''A container orchestrator for homelabs.'''
     logging_args: dict[str, Any] = {
         'logfile': logfile
