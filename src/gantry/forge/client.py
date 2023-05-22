@@ -7,9 +7,11 @@ import urllib3
 import urllib3.exceptions
 import urllib3.util
 
+from .. import __version__
 from .._types import Path
 from ..exceptions import (
     CannotObtainForgeAuthError,
+    ForgeApiOperationFailed,
     ForgeOperationNotSupportedError,
     ForgeUrlInvalidError
 )
@@ -21,8 +23,15 @@ _logger = get_app_logger('forge')
 
 class AuthType(StrEnum):
     '''The authentication types for connecting to a forge.'''
+
     BASIC = 'basic'
+    '''Use HTTP Basic authentication.'''
+
     TOKEN = 'token'
+    '''Use a client-specific API token.'''
+
+    NONE = 'none'
+    '''Do not use any authentication.'''
 
 
 class ForgeAuth(TypedDict):
@@ -63,7 +72,9 @@ class ForgeClient(ABC):
             _logger.debug('Creating \'%s\'.', provider_folder)
             provider_folder.mkdir(mode=0o700, parents=True)
 
-        self._auth_info = self._load_auth_info(self._auth_file)
+        self._load_auth_info()
+        self._update_headers()
+
         self._http = urllib3.PoolManager()
 
     def request_api_token(self) -> None:
@@ -81,7 +92,7 @@ class ForgeClient(ABC):
                       self.provider_name(),
                       self._url)
         self._auth_info = self._get_new_api_token()
-        self._store_auth_info(self._auth_file, self._auth_info)
+        self._store_auth_info()
 
     def set_basic_auth(self, *, user: str, passwd: str) -> None:
         '''Set the client to connect using HTTP basic authentication.
@@ -94,7 +105,8 @@ class ForgeClient(ABC):
             password
         '''
         self._auth_info = ForgeAuth(auth_type=AuthType.BASIC, username=user, password=passwd)
-        self._store_auth_info(self._auth_file, self._auth_info)
+        self._update_headers()
+        self._store_auth_info()
 
     def set_token_auth(self, *, api_token: str) -> None:
         '''Set the client to connect using token authentication.
@@ -108,12 +120,51 @@ class ForgeClient(ABC):
             API tokent
         '''
         self._auth_info = ForgeAuth(auth_type=AuthType.TOKEN, api_token=api_token)
-        self._store_auth_info(self._auth_file, self._auth_info)
+        self._update_headers()
+        self._store_auth_info()
+
+    @property
+    @abstractmethod
+    def endpoint(self) -> urllib3.util.Url:
+        '''Url: The API endpoint for this client.'''
 
     @staticmethod
     @abstractmethod
     def provider_name() -> str:
         '''The provider that this client connects to.'''
+
+    def _update_headers(self) -> None:
+        '''Creates the headers that are sent with the API request.
+
+        This will automatically pick the correct authentication type based on
+        what was last set on this client.
+        '''
+        user_agent = f'gantry/{__version__}'
+
+        match self._auth_info['auth_type']:
+            case AuthType.BASIC:
+                username = self._auth_info.get('username')
+                password = self._auth_info.get('password')
+                if username is None or password is None:
+                    raise ForgeApiOperationFailed(
+                        self.provider_name(),
+                        'Require username/password with HTTP basic auth.'
+                    )
+                self._headers = urllib3.util.make_headers(
+                    user_agent=user_agent,
+                    basic_auth=f'{username}:{password}'
+                )
+            case AuthType.NONE:
+                self._headers = urllib3.util.make_headers(user_agent=user_agent)
+            case AuthType.TOKEN:
+                api_token = self._auth_info.get('api_token')
+                if api_token is None:
+                    raise ForgeApiOperationFailed(
+                        self.provider_name(),
+                        'Request API token with token auth.'
+                    )
+                self._headers = urllib3.util.make_headers(user_agent=user_agent)
+                self._headers['Authorization'] = f'token {api_token}'
 
     def _get_new_api_token(self) -> ForgeAuth:
         '''Obtain a new API token from a forge.
@@ -124,21 +175,17 @@ class ForgeClient(ABC):
             self.provider_name(),
             "This forge does not support requesting API tokens.")
 
-    @classmethod
-    def _load_auth_info(cls, auth_file: Path) -> ForgeAuth:
+    def _load_auth_info(self) -> None:
         try:
-            with auth_file.open('rt') as f:
-                contents = json.load(f)
+            with self._auth_file.open('rt') as f:
+                self._auth_info = json.load(f)
         except FileNotFoundError:
-            contents = ForgeAuth(auth_type=AuthType.BASIC)
-            with auth_file.open('wt') as f:
-                json.dump(contents, f)
+            self._auth_info = ForgeAuth(auth_type=AuthType.NONE)
+            with self._auth_file.open('wt') as f:
+                json.dump(self._auth_info, f)
         except PermissionError:
-            raise CannotObtainForgeAuthError(cls.provider_name())
+            raise CannotObtainForgeAuthError(self.provider_name())
 
-        return contents
-
-    @classmethod
-    def _store_auth_info(cls, auth_file: Path, auth_info: ForgeAuth) -> None:
-        with auth_file.open('wt') as f:
-            json.dump(auth_info, f)
+    def _store_auth_info(self) -> None:
+        with self._auth_file.open('wt') as f:
+            json.dump(self._auth_info, f)

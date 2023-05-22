@@ -2,6 +2,10 @@ import json
 from pathlib import Path
 import stat
 
+from urllib.parse import urljoin
+import urllib3.util
+
+from gantry import __version__ as gantry_version
 from gantry.exceptions import ForgeUrlInvalidError, ForgeOperationNotSupportedError
 from gantry.forge import AuthType, ForgeAuth, ForgeClient
 
@@ -16,6 +20,10 @@ class MockForge(ForgeClient):
                  requests_token: bool = False) -> None:
         self._requests_token = requests_token
         super().__init__(app_folder, url)
+
+    @property
+    def endpoint(self) -> urllib3.util.Url:
+        return urllib3.util.parse_url(urljoin(self._url.url, '/api/v1/mock'))
 
     @staticmethod
     def provider_name() -> str:
@@ -44,11 +52,19 @@ def test_create_new_forge(tmp_path: Path) -> None:
     )
     assert mode == 0o700
 
-    # The auth.json file for a new forge client should be 'basic' with no other
-    # information.
+    # The auth.json file for a new forge client should be using 'none'
+    # authentication with no other information.
     with mock._auth_file.open('rt') as f:
         obj = json.load(f)
-        assert obj == ForgeAuth(auth_type=AuthType.BASIC)
+        assert obj == ForgeAuth(auth_type=AuthType.NONE)
+
+    # Default headers should be an empty dict.
+    assert mock._headers == {'user-agent': f'gantry/{gantry_version}'}
+
+
+def test_correct_endpoint(tmp_path: Path) -> None:
+    mock = MockForge(tmp_path, url='https://example.com')
+    assert mock.endpoint.url == 'https://example.com/api/v1/mock'
 
 
 def test_load_existing_auth_info(tmp_path: Path) -> None:
