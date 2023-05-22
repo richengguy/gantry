@@ -6,19 +6,14 @@ from urllib.parse import urljoin
 from urllib3.util import Url, parse_url
 
 from gantry import __version__ as gantry_version
-from gantry.exceptions import ForgeUrlInvalidError, ForgeOperationNotSupportedError
+from gantry.exceptions import ForgeUrlInvalidError
 from gantry.forge import AuthType, ForgeAuth, ForgeClient
 
 import pytest
 
 
 class MockForge(ForgeClient):
-    def __init__(self,
-                 app_folder: Path,
-                 *,
-                 url: str = 'https://localhost',
-                 requests_token: bool = False) -> None:
-        self._requests_token = requests_token
+    def __init__(self, app_folder: Path, *, url: str = 'https://localhost') -> None:
         super().__init__(app_folder, url)
 
     @property
@@ -31,12 +26,6 @@ class MockForge(ForgeClient):
     @staticmethod
     def provider_name() -> str:
         return 'mock'
-
-    def _get_new_api_token(self) -> ForgeAuth:
-        if self._requests_token:
-            return ForgeAuth(auth_type=AuthType.TOKEN, api_token='54321')
-        else:
-            return super()._get_new_api_token()
 
 
 def test_create_new_forge(tmp_path: Path) -> None:
@@ -111,22 +100,3 @@ def test_error_on_invalid_url(url: str, tmp_path: Path) -> None:
 
     auth_file = tmp_path / 'mock' / 'auth.json'
     assert not auth_file.exists()
-
-
-def test_error_when_request_api_not_supported(tmp_path: Path) -> None:
-    mock = MockForge(tmp_path, requests_token=False)
-    with pytest.raises(ForgeOperationNotSupportedError,
-                       match='This forge does not support requesting API tokens.'):
-        mock.request_api_token()
-
-
-def test_correct_behavior_when_request_api_supported(tmp_path: Path) -> None:
-    mock = MockForge(tmp_path, requests_token=True)
-    mock.request_api_token()
-
-    with mock._auth_file.open('rt') as f:
-        info = json.load(f)
-
-    assert info['auth_type'] == AuthType.TOKEN
-    assert info['api_token'] == '54321'
-    assert info == mock._auth_info

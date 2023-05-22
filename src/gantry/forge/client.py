@@ -10,12 +10,11 @@ import urllib3.exceptions
 from urllib3.util import Url, parse_url
 
 from .. import __version__
-from .._types import Path, PathLike
+from .._types import Path
 from ..exceptions import (
     CannotObtainForgeAuthError,
     ForgeApiOperationFailed,
-    ForgeOperationNotSupportedError,
-    ForgeUrlInvalidError
+    ForgeUrlInvalidError,
 )
 from ..logging import get_app_logger
 
@@ -49,8 +48,7 @@ class ForgeClient(ABC):
 
     The :class:`ForgeClient` allows gantry to perform a set of basic operations
     with a software forge, such as authentication and pushing up container
-    images.  Some clients can also obtain API authentication credentials as part
-    of the authentication process.
+    images.
     '''
     def __init__(self, app_folder: Path, url: str) -> None:
         '''
@@ -104,23 +102,6 @@ class ForgeClient(ABC):
         :class:`ForgeApiOperationFailed`
             if the client failed to get the server version
         '''
-
-    def request_api_token(self) -> None:
-        '''Request an API token from the forge.
-
-        The client must already have some stored authentication credentials,
-        e.g. basic auth user name and password, before this call can be made.
-
-        Raises
-        ------
-        :class:`ForgeAPIOperationFailed`
-            when an API operation has failed
-        '''
-        _logger.debug('Requesting \'%s\' API token from provider at \'%s\'.',
-                      self.provider_name(),
-                      self._url)
-        self._auth_info = self._get_new_api_token()
-        self._store_auth_info()
 
     def set_basic_auth(self, *, user: str, passwd: str) -> None:
         '''Set the client to connect using HTTP basic authentication.
@@ -196,15 +177,6 @@ class ForgeClient(ABC):
                 self._headers = urllib3.util.make_headers(user_agent=user_agent)
                 self._headers['Authorization'] = f'token {api_token}'
 
-    def _get_new_api_token(self) -> ForgeAuth:
-        '''Obtain a new API token from a forge.
-
-        This should be overridden by a subclass if the operation is supported.
-        '''
-        raise ForgeOperationNotSupportedError(
-            self.provider_name(),
-            "This forge does not support requesting API tokens.")
-
     def _load_auth_info(self) -> None:
         try:
             with self._auth_file.open('rt') as f:
@@ -223,7 +195,6 @@ class ForgeClient(ABC):
     @classmethod
     def _resolve_certs(cls, app_folder: Path) -> str:
         app_certs = app_folder / 'certs' / f'{cls.provider_name()}.ca-bundle'
-        _logger.debug('Resolving certs (%s)', app_certs)
         if app_certs.exists():
             _logger.debug('Using certs in \'%s\'.', app_certs)
             return app_certs.absolute().as_posix()
