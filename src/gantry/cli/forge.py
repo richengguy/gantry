@@ -109,23 +109,53 @@ def cmd_authenticate(opts: ProgramOptions,
     GANTRY_FORGE_USER and GANTRY_FORGE_PASS when working with user name and
     password logins.
     '''
+    console = Console()
     config = _check_config(opts)
+
+    has_username = username is not None
+    has_password = password is not None
+
+    basic_auth = all([has_username, has_password])
+    api_auth = api_token is not None
+
+    if basic_auth and api_auth:
+        console.print(
+            '[bold red]\u274c[/bold red] Cannot specify both an API token and '
+            'username/password.'
+        )
+        raise CliException('Invalid options.')
+
+    if has_username and not has_password:
+        raise CliException('Must provide a password with a username.')
+
+    if not has_username and has_password:
+        raise CliException('Must provide a username with a password.')
+
+    if not basic_auth and not api_auth:
+        result = Prompt.ask('[grey30]>[/grey30] Authentication Type', choices=['basic', 'token'])
+        match result:
+            case 'basic':
+                username = Prompt.ask('   [grey30]-[/grey30] Username')
+                password = Prompt.ask('   [grey30]-[/grey30] Password', password=True)
+            case 'token':
+                api_token = Prompt.ask('   [grey30]-[/grey30] API Token', password=True)
+            case _:
+                raise CliException(f'Unknown option {result}.')
+    else:
+        auth_type = 'basic' if basic_auth else 'api_auth'
+        console.print(f'[grey30]>[/grey30] Configurating \'{auth_type}\' authentication.')
+
     if len(certs) > 0:
         _copy_custom_cert(opts, certs)
 
     client = make_client(config, opts.app_folder)
 
-    if api_token is None:
-        _logger.debug('API token not provided; will request from \'%s\' provider.',
-                      config.forge_provider)
-
-        if username is None or password is None:
-            username = Prompt.ask(' - Username')
-            password = Prompt.ask(' - Password', password=True)
-
+    if api_token is not None:
+        client.set_token_auth(api_token=api_token)
+    elif username is not None and password is not None:
         client.set_basic_auth(user=username, passwd=password)
     else:
-        pass
+        raise CliException('Unknown authentication type.')
 
 
 @cmd.command('version')
