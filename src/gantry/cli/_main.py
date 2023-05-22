@@ -61,11 +61,15 @@ def main(ctx: click.Context,
         logging_args['log_level'] = logging.DEBUG
         logging_args['show_traceback'] = True
 
-    init_logger(**logging_args)  # type: ignore
+    logger = init_logger(**logging_args)  # type: ignore
     ctx.obj = ProgramOptions(
         app_folder=app_folder,
         config=_load_config_file(config_file)
     )
+
+    if not app_folder.exists():
+        logger.debug('Creating app folder at \'%s\'.', app_folder)
+        app_folder.mkdir(mode=0o700, parents=True)
 
 
 main.add_command(build.cmd)

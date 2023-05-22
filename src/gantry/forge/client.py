@@ -3,12 +3,14 @@ from enum import StrEnum
 import json
 from typing import TypedDict, NotRequired
 
+import certifi
+
 from urllib3 import PoolManager
 import urllib3.exceptions
 from urllib3.util import Url, parse_url
 
 from .. import __version__
-from .._types import Path
+from .._types import Path, PathLike
 from ..exceptions import (
     CannotObtainForgeAuthError,
     ForgeApiOperationFailed,
@@ -56,6 +58,10 @@ class ForgeClient(ABC):
         ----------
         app_folder : path
             gantry's working folder
+        url : str
+            service API URL
+        cert : path, optional
+            path to a custom root cert if the forge does not use a public cert
         '''
         provider_folder = app_folder / self.provider_name()
         self._auth_file = provider_folder / 'auth.json'
@@ -75,7 +81,10 @@ class ForgeClient(ABC):
         self._load_auth_info()
         self._update_headers()
 
-        self._http = PoolManager()
+        self._http = PoolManager(
+            cert_reqs='CERT_REQUIRED',
+            ca_certs=self._resolve_certs(app_folder)
+        )
 
     @abstractmethod
     def get_server_version(self) -> str:
@@ -210,3 +219,13 @@ class ForgeClient(ABC):
     def _store_auth_info(self) -> None:
         with self._auth_file.open('wt') as f:
             json.dump(self._auth_info, f)
+
+    @classmethod
+    def _resolve_certs(cls, app_folder: Path) -> str:
+        app_certs = app_folder / 'certs' / f'{cls.provider_name()}.ca-bundle'
+        _logger.debug('Resolving certs (%s)', app_certs)
+        if app_certs.exists():
+            _logger.debug('Using certs in \'%s\'.', app_certs)
+            return app_certs.absolute().as_posix()
+        else:
+            return certifi.where()

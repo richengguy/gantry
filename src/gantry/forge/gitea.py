@@ -36,6 +36,7 @@ class GiteaClient(ForgeClient):
                 self.provider_name(),
                 f'Operation failed with {resp.status}.'
             )
+
         return resp.json()['version']
 
     # def _get_new_api_token(self) -> ForgeAuth:
