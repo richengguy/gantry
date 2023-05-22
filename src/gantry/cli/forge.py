@@ -58,27 +58,30 @@ def cmd(opts: ProgramOptions) -> None:
 @cmd.command('auth')
 @click.option(
     '--api-token', '-a',
-    metavar='API_TOKEN',
+    metavar='TOKEN',
     envvar='GANTRY_FORGE_API_TOKEN',
     help=(
-        'The API token used to authenticate with the forge.  Gantry is able to '
-        'automatically obtain this for some forge providers.'
+        'An API token that is used to access the forge.  Depending on the '
+        'provider, the token may require specific scopes/permissions to work '
+        'correctly.'
     ),
     type=str
 )
 @click.option(
     '--user', '-u', 'username',
+    metavar='USERNAME',
     envvar='GANTRY_FORGE_USER',
     help=(
-        'The username of the account that gantry will try and connect as.'
+        'An account user name.  Required for Basic authentication.'
     ),
     type=str
 )
 @click.option(
     '--pass', '-p', 'password',
+    metavar='PASSWORD',
     envvar='GANTRY_FORGE_PASS',
     help=(
-        'The password of the account that gantry will try and connect as.'
+        'An account password.  Required for Basic authentication.'
     )
 )
 @click.option(
@@ -86,8 +89,8 @@ def cmd(opts: ProgramOptions) -> None:
     multiple=True,
     help=(
         'Specify a custom TLS certificate to use with the forge provider.  '
-        'This may be used multiple times if a chain of certificates need to be '
-        'specified.'
+        'This may be used multiple times if a chain of certificates needs to '
+        'be specified.'
     ),
     type=click.Path(exists=True, file_okay=True, dir_okay=False, resolve_path=True, path_type=Path)
 )
