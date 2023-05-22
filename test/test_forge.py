@@ -1,9 +1,9 @@
 import json
 from pathlib import Path
 import stat
-
 from urllib.parse import urljoin
-import urllib3.util
+
+from urllib3.util import Url, parse_url
 
 from gantry import __version__ as gantry_version
 from gantry.exceptions import ForgeUrlInvalidError, ForgeOperationNotSupportedError
@@ -22,8 +22,11 @@ class MockForge(ForgeClient):
         super().__init__(app_folder, url)
 
     @property
-    def endpoint(self) -> urllib3.util.Url:
-        return urllib3.util.parse_url(urljoin(self._url.url, '/api/v1/mock'))
+    def endpoint(self) -> Url:
+        return parse_url(urljoin(self._url.url, '/api/v1/mock'))
+
+    def get_server_version(self) -> str:
+        return 'n/a'
 
     @staticmethod
     def provider_name() -> str:

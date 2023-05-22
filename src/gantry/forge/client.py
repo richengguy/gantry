@@ -3,9 +3,9 @@ from enum import StrEnum
 import json
 from typing import TypedDict, NotRequired
 
-import urllib3
+from urllib3 import PoolManager
 import urllib3.exceptions
-import urllib3.util
+from urllib3.util import Url, parse_url
 
 from .. import __version__
 from .._types import Path
@@ -61,7 +61,7 @@ class ForgeClient(ABC):
         self._auth_file = provider_folder / 'auth.json'
 
         try:
-            self._url = urllib3.util.parse_url(url)
+            self._url = parse_url(url)
         except urllib3.exceptions.LocationValueError as e:
             raise ForgeUrlInvalidError(self.provider_name(), url) from e
 
@@ -75,7 +75,26 @@ class ForgeClient(ABC):
         self._load_auth_info()
         self._update_headers()
 
-        self._http = urllib3.PoolManager()
+        self._http = PoolManager()
+
+    @abstractmethod
+    def get_server_version(self) -> str:
+        '''Get the version of the forge service the client is connected to.
+
+        The definition of 'version' will depend on the forge service.  The
+        client should know how to interpret the response and return some
+        information about the service.
+
+        Returns
+        -------
+        str
+            the returned service version
+
+        Raises
+        ------
+        :class:`ForgeApiOperationFailed`
+            if the client failed to get the server version
+        '''
 
     def request_api_token(self) -> None:
         '''Request an API token from the forge.
@@ -104,6 +123,7 @@ class ForgeClient(ABC):
         passwd : str
             password
         '''
+        _logger.debug('Setting %s to use HTTP Basic authentication.', self.provider_name())
         self._auth_info = ForgeAuth(auth_type=AuthType.BASIC, username=user, password=passwd)
         self._update_headers()
         self._store_auth_info()
@@ -119,13 +139,14 @@ class ForgeClient(ABC):
         api_token : str
             API tokent
         '''
+        _logger.debug('Setting %s to use API token authentication.', self.provider_name())
         self._auth_info = ForgeAuth(auth_type=AuthType.TOKEN, api_token=api_token)
         self._update_headers()
         self._store_auth_info()
 
     @property
     @abstractmethod
-    def endpoint(self) -> urllib3.util.Url:
+    def endpoint(self) -> Url:
         '''Url: The API endpoint for this client.'''
 
     @staticmethod

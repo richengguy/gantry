@@ -28,6 +28,12 @@ def _load_config_file(config_file: Path) -> Config | None:
 
 @click.group()
 @click.option(
+    '--app-folder', '-a', 'app_folder',
+    help='Gantry application folder.',
+    default='.gantry',
+    type=click.Path(file_okay=False, dir_okay=True, path_type=Path)
+)
+@click.option(
     '--config', '-c', 'config_file',
     help='Gantry configuration file.',
     default='gantry.yml',
@@ -41,7 +47,11 @@ def _load_config_file(config_file: Path) -> Config | None:
 )
 @click.version_option(version=__version__)
 @click.pass_context
-def main(ctx: click.Context, config_file: Path, debug: bool, logfile: Path | None) -> None:
+def main(ctx: click.Context,
+         app_folder: Path,
+         config_file: Path,
+         debug: bool,
+         logfile: Path | None) -> None:
     '''A container orchestrator for homelabs.'''
     logging_args: dict[str, Any] = {
         'logfile': logfile
@@ -53,6 +63,7 @@ def main(ctx: click.Context, config_file: Path, debug: bool, logfile: Path | Non
 
     init_logger(**logging_args)  # type: ignore
     ctx.obj = ProgramOptions(
+        app_folder=app_folder,
         config=_load_config_file(config_file)
     )
 
