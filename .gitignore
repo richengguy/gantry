@@ -1,5 +1,9 @@
 .vscode/
 
+# Gantry-specific files
+gantry.yml
+.gantry/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

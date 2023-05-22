@@ -11,6 +11,9 @@ from ..services import ServiceGroupDefinition
 
 
 class ProgramOptions(NamedTuple):
+    app_folder: Path
+    '''The location where the program's runtime data is stored.'''
+
     config: Config | None
     '''The program's configuration data.  Will be "None" if it isn't available.'''
 
