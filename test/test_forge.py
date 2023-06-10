@@ -3,13 +3,15 @@ from pathlib import Path
 import stat
 from urllib.parse import urljoin
 
-from urllib3.util import Url, parse_url
+import certifi
 
 from gantry import __version__ as gantry_version
 from gantry.exceptions import ForgeUrlInvalidError
 from gantry.forge import AuthType, ForgeAuth, ForgeClient
 
 import pytest
+
+from urllib3.util import Url, parse_url
 
 
 class MockForge(ForgeClient):
@@ -52,6 +54,9 @@ def test_create_new_forge(tmp_path: Path) -> None:
 
     # Default headers should be an empty dict.
     assert mock._headers == {'user-agent': f'gantry/{gantry_version}'}
+
+    # Default certs path should be the same as certifi.
+    assert mock.ca_certs == certifi.where()
 
 
 def test_correct_endpoint(tmp_path: Path) -> None:

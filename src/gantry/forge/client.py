@@ -79,9 +79,11 @@ class ForgeClient(ABC):
         self._load_auth_info()
         self._update_headers()
 
+        self._ca_certs = self._resolve_certs(app_folder)
+
         self._http = PoolManager(
             cert_reqs='CERT_REQUIRED',
-            ca_certs=self._resolve_certs(app_folder)
+            ca_certs=self._ca_certs
         )
 
     @abstractmethod
@@ -133,6 +135,11 @@ class ForgeClient(ABC):
         self._auth_info = ForgeAuth(auth_type=AuthType.TOKEN, api_token=api_token)
         self._update_headers()
         self._store_auth_info()
+
+    @property
+    def ca_certs(self) -> str:
+        '''str: Path to the root CA certs used by the forge provider.'''
+        return self._ca_certs
 
     @property
     @abstractmethod
