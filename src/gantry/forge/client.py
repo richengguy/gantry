@@ -5,6 +5,10 @@ from typing import TypedDict, NotRequired
 
 import certifi
 
+import docker
+from docker.constants import DEFAULT_UNIX_SOCKET
+from docker.errors import DockerException
+
 from urllib3 import PoolManager
 import urllib3.exceptions
 from urllib3.util import Url, parse_url
@@ -13,6 +17,7 @@ from .. import __version__
 from .._types import Path
 from ..exceptions import (
     CannotObtainForgeAuthError,
+    ClientConnectionError,
     ForgeApiOperationFailed,
     ForgeUrlInvalidError,
 )
@@ -104,6 +109,26 @@ class ForgeClient(ABC):
         :class:`ForgeApiOperationFailed`
             if the client failed to get the server version
         '''
+
+    def push_image(self, image: str) -> None:
+        '''Push an image to the forge's container registry.
+
+        If the image name doesn't already contain the registry URL, e.g.
+        ``registry.example.com/image:latest``, then a new tag will be created
+        to prepare the image for the push.
+
+        Parameters
+        ----------
+        image : str
+            name of the image to push
+        '''
+        try:
+            _logger.debug('Create docker client.')
+            tls = docker.tls.TLSConfig(ca_cert=self._ca_certs)
+            client = docker.DockerClient(base_url=DEFAULT_UNIX_SOCKET, tls=tls)
+        except DockerException as e:
+            _logger.critical('Failed to create Docker API client.', exc_info=e)
+            raise ClientConnectionError from e
 
     def set_basic_auth(self, *, user: str, passwd: str) -> None:
         '''Set the client to connect using HTTP basic authentication.
