@@ -7,7 +7,8 @@ import certifi
 
 import docker
 from docker.constants import DEFAULT_UNIX_SOCKET
-from docker.errors import DockerException
+from docker.errors import DockerException, ImageNotFound
+from docker.models.images import Image
 
 from urllib3 import PoolManager
 import urllib3.exceptions
@@ -110,25 +111,40 @@ class ForgeClient(ABC):
             if the client failed to get the server version
         '''
 
-    def push_image(self, image: str) -> None:
+    def push_image(self, name: str) -> None:
         '''Push an image to the forge's container registry.
 
-        If the image name doesn't already contain the registry URL, e.g.
-        ``registry.example.com/image:latest``, then a new tag will be created
-        to prepare the image for the push.
+        The client will automatically tag the image (if needed) so it can be
+        pushed to the forge's private registry.  For example, if the image name
+        is ``image:v1.2`` then a new image name, referencing the original, will
+        be created called ``registry.example.com/image:v1.2``.
 
         Parameters
         ----------
-        image : str
+        name : str
             name of the image to push
         '''
+        registry_url = self._url.host
+        if registry_url is None:
+            raise ForgeUrlInvalidError('Missing the registry URL.', str(self._url))
+
         try:
             _logger.debug('Create docker client.')
             tls = docker.tls.TLSConfig(ca_cert=self._ca_certs)
             client = docker.DockerClient(base_url=DEFAULT_UNIX_SOCKET, tls=tls)
+            image: Image = client.images.get(name)
+
+            if not name.startswith(registry_url):
+                name = f'{registry_url}/{name}'
+                image.tag(name)
+
+        except ImageNotFound as e:
+            _logger.error('Could not find and image named \'%s\'.', name, exc_info=e)
+            raise ForgeApiOperationFailed(
+                self.provider_name(), 'Cannot find container image.')
         except DockerException as e:
             _logger.critical('Failed to create Docker API client.', exc_info=e)
-            raise ClientConnectionError from e
+            raise ClientConnectionError()
 
     def set_basic_auth(self, *, user: str, passwd: str) -> None:
         '''Set the client to connect using HTTP basic authentication.
