@@ -29,10 +29,10 @@ from ..services import ServiceDefinition, ServiceGroupDefinition
 _logger = get_app_logger('build-image')
 
 
-def _create_image_name(registry: str | None, tag: str, service: ServiceDefinition) -> str:
+def _create_image_name(namespace: str | None, tag: str, service: ServiceDefinition) -> str:
     image_name = f'{service.name}:{tag}'
-    if registry is not None:
-        image_name = f'{registry}/{image_name}'
+    if namespace is not None:
+        image_name = f'{namespace}/{image_name}'
     return image_name
 
 
@@ -171,8 +171,8 @@ class _ImageBuilder:
 
 class BuildDockerImages:
     '''Build Docker images for each service in a service group.'''
-    def __init__(self, build_folder: Path, registry: str | None, tag: str) -> None:
-        self._builder = _ImageBuilder(build_folder, registry, tag)
+    def __init__(self, build_folder: Path, namespace: str | None, tag: str) -> None:
+        self._builder = _ImageBuilder(build_folder, namespace, tag)
 
     def run(self, service_group: ServiceGroupDefinition) -> None:
         status_reporter = _OverallProcessingStatus(service_group)
@@ -183,16 +183,16 @@ class BuildDockerImages:
 
 class GenerateManifestFile:
     '''Generate a manifest file that specifies the versions of each service.'''
-    def __init__(self, build_folder: Path, registry: str | None, tag: str) -> None:
+    def __init__(self, build_folder: Path, namespace: str | None, tag: str) -> None:
         self._build_folder = build_folder
-        self._registry = registry
+        self._namespace = namespace
         self._tag = tag
 
     def run(self, service_group: ServiceGroupDefinition) -> None:
         manifest: list[dict[str, str]] = []
         for service in service_group:
             manifest.append({
-                'image': _create_image_name(self._registry, self._tag, service),
+                'image': _create_image_name(self._namespace, self._tag, service),
                 'service': service.name
             })
 
@@ -204,7 +204,7 @@ class GenerateManifestFile:
 class ImageTarget(Target):
     '''Build the container images for a service group.'''
     def __init__(self,
-                 registry: str | None,
+                 namespace: str | None,
                  tag: str,
                  build_folder: PathLike,
                  *,
@@ -212,9 +212,8 @@ class ImageTarget(Target):
         '''
         Parameters
         ----------
-        registry : str or ``None``
-            name of the registry the images should be pushed to; set to ``None``
-            if the image has is not being pushed to a container registry
+        namespace : str or ``None``
+            an optional namespace that is prepended to the image name; optional
         tag : str
             the image tag; often this will be the build verison
         build_folder : path-like
@@ -227,12 +226,12 @@ class ImageTarget(Target):
 
         stages: list[Pipeline.Stage] = []
         stages.append(CopyServiceResources(self._build_folder))
-        stages.append(GenerateManifestFile(self._build_folder, registry, tag))
+        stages.append(GenerateManifestFile(self._build_folder, namespace, tag))
 
         if skip_build:
             _logger.info('Docker build stage will be skipped.')
         else:
-            stages.append(BuildDockerImages(self._build_folder, registry, tag))
+            stages.append(BuildDockerImages(self._build_folder, namespace, tag))
 
         self._pipeline = Pipeline(stages=stages)
 
