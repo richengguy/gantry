@@ -2,10 +2,6 @@ import json
 import shutil
 from typing import Iterator
 
-import docker  # type: ignore
-from docker.constants import DEFAULT_UNIX_SOCKET  # type: ignore
-from docker.errors import DockerException  # type: ignore
-
 from rich.console import Group
 from rich.live import Live
 from rich.progress import (
@@ -21,7 +17,8 @@ from rich.text import Text
 from ._common import CopyServiceResources, Pipeline, Target
 
 from .._types import Path, PathLike
-from ..exceptions import ClientConnectionError, ServiceImageBuildError
+from ..docker import Docker
+from ..exceptions import ServiceImageBuildError
 from ..logging import get_app_logger
 from ..services import ServiceDefinition, ServiceGroupDefinition
 
@@ -133,13 +130,7 @@ class _OverallProcessingStatus:
 
 class _ImageBuilder:
     def __init__(self, folder: Path, registry: str | None, tag: str) -> None:
-        try:
-            _logger.debug('Create Docker API client.')
-            self._api = docker.APIClient(base_url=DEFAULT_UNIX_SOCKET)
-        except DockerException as e:
-            _logger.critical('Failed to create Docker API client.', exc_info=e)
-            raise ClientConnectionError from e
-
+        self._api = Docker.create_low_level_api()
         self._folder = folder
         self._registry = registry
         self._tag = tag

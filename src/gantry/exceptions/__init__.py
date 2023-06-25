@@ -6,6 +6,13 @@ from .config import (
     InvalidConfigValueError,
 )
 
+from .docker import (
+    DockerGenericError,
+    DockerConnectionError,
+    NoSuchImageError,
+    RegistryAuthError
+)
+
 from .forge import (
     ForgeError,
     CannotObtainForgeAuthError,

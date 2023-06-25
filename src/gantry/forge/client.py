@@ -128,15 +128,39 @@ class ForgeClient(ABC):
         if registry_url is None:
             raise ForgeUrlInvalidError('Missing the registry URL.', str(self._url))
 
+        match self._auth_info['auth_type']:
+            case AuthType.BASIC:
+                auth_config = {
+                    'username': self._auth_info['username'],
+                    'password': self._auth_info['password']
+                }
+            case AuthType.TOKEN:
+                auth_config = {
+                    'username': '',
+                    'password': self._auth_info['api_token']
+                }
+            case AuthType.NONE:
+                raise ForgeApiOperationFailed(
+                    self.provider_name(),
+                    'Container push operations require authentication.'
+                )
+
         try:
             _logger.debug('Create docker client.')
             tls = docker.tls.TLSConfig(ca_cert=self._ca_certs)
             client = docker.DockerClient(base_url=DEFAULT_UNIX_SOCKET, tls=tls)
             image: Image = client.images.get(name)
 
+            _logger.debug('Push %s to registry.', name)
+
             if not name.startswith(registry_url):
                 name = f'{registry_url}/{name}'
                 image.tag(name)
+                _logger.debug('Tagged image as \'%s\'.', name)
+
+            resp = client.images.push(name, stream=True, decode=True, auth_config=auth_config)
+            for line in resp:
+                print(line)
 
         except ImageNotFound as e:
             _logger.error('Could not find and image named \'%s\'.', name, exc_info=e)
