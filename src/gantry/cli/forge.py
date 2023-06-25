@@ -126,7 +126,7 @@ def cmd_authenticate(opts: ProgramOptions,
     if basic_auth and api_auth:
         console.print(
             '[bold red]\u274c[/bold red] Cannot specify both an API token and '
-            'username/password.'
+            'password.'
         )
         raise CliException('Invalid options.')
 
@@ -156,13 +156,18 @@ def cmd_authenticate(opts: ProgramOptions,
     client = make_client(config, opts.app_folder)
 
     if api_token is not None:
-        client.set_token_auth(user=username, api_token=api_token)
+        client.set_token_auth(user=username, api_token=api_token)  # type: ignore
     elif username is not None and password is not None:
         client.set_basic_auth(user=username, passwd=password)
     else:
         raise CliException('Unknown authentication type.')
 
-    client.authenticate_with_container_registry()
+    try:
+        client.get_server_version()
+        client.authenticate_with_container_registry()
+        console.print('[green]\u2713[/green] Authenticated')
+    except Exception:
+        raise CliException('Authentication failed...run with \'gantry -d\' to see traceback.')
 
 
 @cmd.command('push')
