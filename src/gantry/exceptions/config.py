@@ -2,8 +2,10 @@ from typing import NamedTuple
 
 from jsonschema.exceptions import ValidationError
 
+from ._base import GantryException
 
-class ConfigException(Exception):
+
+class ConfigException(GantryException):
     '''Base class for all configuration exceptions.'''
     def __init__(self, *args: object) -> None:
         super().__init__(*args)

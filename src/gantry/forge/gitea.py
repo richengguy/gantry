@@ -36,7 +36,7 @@ class GiteaClient(ForgeClient):
             ) from e
 
         if resp.status != 200:
-            _logger.error('Version request failed with %d.', resp.status)
+            # _logger.error('Version request failed with %d.', resp.status)
             raise ForgeApiOperationFailed(
                 self.provider_name(),
                 f'Operation failed with {resp.status}.'

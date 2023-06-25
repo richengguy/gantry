@@ -9,7 +9,7 @@ from ._common import ProgramOptions, print_header
 
 from .._types import Path
 from ..config import Config
-from ..exceptions import CliException, ForgeApiOperationFailed, ForgeError
+from ..exceptions import CliException, ForgeApiOperationFailed, GantryException
 from ..forge import make_client
 from ..logging import get_app_logger
 
@@ -166,7 +166,8 @@ def cmd_authenticate(opts: ProgramOptions,
         client.get_server_version()
         client.authenticate_with_container_registry()
         console.print('[green]\u2713[/green] Authenticated')
-    except Exception:
+    except GantryException as e:
+        _logger.exception('%s', str(e), exc_info=e)
         raise CliException('Authentication failed...run with \'gantry -d\' to see traceback.')
 
 
@@ -194,7 +195,8 @@ def cmd_push(opts: ProgramOptions, manifest: Path) -> None:
             image = item['image']
             console.print(f'Push [bold]{image}[/bold]')
             client.push_image(image)
-    except ForgeError:
+    except GantryException as e:
+        _logger.exception('%s', str(e), exc_info=e)
         raise CliException('Push failed...run with \'gantry -d\' to see traceback.')
 
 
@@ -214,6 +216,6 @@ def cmd_version(opts: ProgramOptions) -> None:
         with console.status('[blue]Connecting to client...'):
             version = client.get_server_version()
         console.print(f'{client.provider_name()} - {version}')
-    except ForgeApiOperationFailed as e:
-        _logger.exception(str(e), exc_info=e)
+    except GantryException as e:
+        _logger.exception('%s', str(e), exc_info=e)
         raise CliException('Failed to get version...run with \'gantry -d\' to see traceback.')

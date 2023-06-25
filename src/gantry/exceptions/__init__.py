@@ -1,3 +1,5 @@
+from ._base import GantryException
+
 from .cli import CliException
 
 from .config import (

@@ -103,7 +103,6 @@ class Docker:
         try:
             return self._client.images.get(name)
         except docker.errors.ImageNotFound as e:
-            _logger.error('Cannot find an image called \'%s\'.', name)
             raise NoSuchImageError(name) from e
 
     def login(self, registry: Url, username: str, password: str) -> None:

@@ -1,8 +1,16 @@
-class ForgeError(Exception):
+from ._base import GantryException
+
+
+class ForgeError(GantryException):
     '''Base exception for errors thrown when working with software forges.'''
     def __init__(self, forge: str, msg: str) -> None:
         self._forge = forge
+        self._base_msg = msg
         super().__init__(f'{forge} :: {msg}')
+
+    @property
+    def base_msg(self) -> str:
+        return self._base_msg
 
     @property
     def forge(self) -> str:

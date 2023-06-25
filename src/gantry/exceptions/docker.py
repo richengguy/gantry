@@ -1,4 +1,7 @@
-class DockerGenericError(Exception):
+from ._base import GantryException
+
+
+class DockerGenericError(GantryException):
     '''Base error for all Docker-related errors.
 
     These are often, but not always, triggered by lower-level Docker API errors.
