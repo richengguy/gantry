@@ -16,10 +16,12 @@ from urllib3.util import Url, parse_url
 
 from .. import __version__
 from .._types import Path
+from ..docker import Docker
 from ..exceptions import (
     CannotObtainForgeAuthError,
     ClientConnectionError,
     ForgeApiOperationFailed,
+    ForgeOperationNotSupportedError,
     ForgeUrlInvalidError,
 )
 from ..logging import get_app_logger
@@ -69,6 +71,7 @@ class ForgeClient(ABC):
         '''
         provider_folder = app_folder / self.provider_name()
         self._auth_file = provider_folder / 'auth.json'
+        self._docker_config = provider_folder / 'docker.json'
 
         try:
             self._url = parse_url(url)
@@ -91,6 +94,28 @@ class ForgeClient(ABC):
             cert_reqs='CERT_REQUIRED',
             ca_certs=self._ca_certs
         )
+
+    def authenticate_with_container_registry(self) -> None:
+        '''Authenticate with the forge's container registry.'''
+        username: str
+        password: str | None
+        match self._auth_info['auth_type']:
+            case AuthType.BASIC:
+                username = self._auth_info['username']
+                password = self._auth_info['password']
+            case AuthType.TOKEN:
+                username = self._auth_info['username']
+                password = self._auth_info['api_token']
+            case AuthType.NONE:
+                raise ForgeOperationNotSupportedError(
+                    self.provider_name(),
+                    'Registry authentication requires forge credentials to '
+                    'have been provided.'
+                )
+
+        with Docker(ca_certs=self._ca_certs, config=self._docker_config) as client:
+            _logger.debug('Logging into container registry at %s', self.endpoint)
+            client.login(self.endpoint, username, password)
 
     @abstractmethod
     def get_server_version(self) -> str:
@@ -128,47 +153,30 @@ class ForgeClient(ABC):
         if registry_url is None:
             raise ForgeUrlInvalidError('Missing the registry URL.', str(self._url))
 
-        match self._auth_info['auth_type']:
-            case AuthType.BASIC:
-                auth_config = {
-                    'username': self._auth_info['username'],
-                    'password': self._auth_info['password']
-                }
-            case AuthType.TOKEN:
-                auth_config = {
-                    'username': '',
-                    'password': self._auth_info['api_token']
-                }
-            case AuthType.NONE:
-                raise ForgeApiOperationFailed(
-                    self.provider_name(),
-                    'Container push operations require authentication.'
-                )
+        # try:
+        #     _logger.debug('Create docker client.')
+        #     tls = docker.tls.TLSConfig(ca_cert=self._ca_certs)
+        #     client = docker.DockerClient(base_url=DEFAULT_UNIX_SOCKET, tls=tls)
+        #     image: Image = client.images.get(name)
 
-        try:
-            _logger.debug('Create docker client.')
-            tls = docker.tls.TLSConfig(ca_cert=self._ca_certs)
-            client = docker.DockerClient(base_url=DEFAULT_UNIX_SOCKET, tls=tls)
-            image: Image = client.images.get(name)
+        #     _logger.debug('Push %s to registry.', name)
 
-            _logger.debug('Push %s to registry.', name)
+        #     if not name.startswith(registry_url):
+        #         name = f'{registry_url}/{name}'
+        #         image.tag(name)
+        #         _logger.debug('Tagged image as \'%s\'.', name)
 
-            if not name.startswith(registry_url):
-                name = f'{registry_url}/{name}'
-                image.tag(name)
-                _logger.debug('Tagged image as \'%s\'.', name)
+        #     resp = client.images.push(name, stream=True, decode=True, auth_config=auth_config)
+        #     for line in resp:
+        #         print(line)
 
-            resp = client.images.push(name, stream=True, decode=True, auth_config=auth_config)
-            for line in resp:
-                print(line)
-
-        except ImageNotFound as e:
-            _logger.error('Could not find and image named \'%s\'.', name, exc_info=e)
-            raise ForgeApiOperationFailed(
-                self.provider_name(), 'Cannot find container image.')
-        except DockerException as e:
-            _logger.critical('Failed to create Docker API client.', exc_info=e)
-            raise ClientConnectionError()
+        # except ImageNotFound as e:
+        #     _logger.error('Could not find and image named \'%s\'.', name, exc_info=e)
+        #     raise ForgeApiOperationFailed(
+        #         self.provider_name(), 'Cannot find container image.')
+        # except DockerException as e:
+        #     _logger.critical('Failed to create Docker API client.', exc_info=e)
+        #     raise ClientConnectionError()
 
     def set_basic_auth(self, *, user: str, passwd: str) -> None:
         '''Set the client to connect using HTTP basic authentication.
@@ -185,7 +193,7 @@ class ForgeClient(ABC):
         self._update_headers()
         self._store_auth_info()
 
-    def set_token_auth(self, *, api_token: str) -> None:
+    def set_token_auth(self, *, user: str, api_token: str) -> None:
         '''Set the client to connect using token authentication.
 
         The exact meaning of "token authentication" will be specific to the
@@ -193,11 +201,13 @@ class ForgeClient(ABC):
 
         Parameters
         ----------
+        user : str
+            user the API token is associated with
         api_token : str
-            API tokent
+            API token
         '''
         _logger.debug('Setting %s to use API token authentication.', self.provider_name())
-        self._auth_info = ForgeAuth(auth_type=AuthType.TOKEN, api_token=api_token)
+        self._auth_info = ForgeAuth(auth_type=AuthType.TOKEN, api_token=api_token, username=user)
         self._update_headers()
         self._store_auth_info()
 

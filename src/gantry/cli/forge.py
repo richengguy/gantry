@@ -121,7 +121,7 @@ def cmd_authenticate(opts: ProgramOptions,
     has_password = password is not None
 
     basic_auth = all([has_username, has_password])
-    api_auth = api_token is not None
+    api_auth = all([has_username, api_token])
 
     if basic_auth and api_auth:
         console.print(
@@ -138,9 +138,9 @@ def cmd_authenticate(opts: ProgramOptions,
 
     if not basic_auth and not api_auth:
         result = Prompt.ask('[grey30]>[/grey30] Authentication Type', choices=['basic', 'token'])
+        username = Prompt.ask('   [grey30]-[/grey30] Username')
         match result:
             case 'basic':
-                username = Prompt.ask('   [grey30]-[/grey30] Username')
                 password = Prompt.ask('   [grey30]-[/grey30] Password', password=True)
             case 'token':
                 api_token = Prompt.ask('   [grey30]-[/grey30] API Token', password=True)
@@ -156,11 +156,13 @@ def cmd_authenticate(opts: ProgramOptions,
     client = make_client(config, opts.app_folder)
 
     if api_token is not None:
-        client.set_token_auth(api_token=api_token)
+        client.set_token_auth(user=username, api_token=api_token)
     elif username is not None and password is not None:
         client.set_basic_auth(user=username, passwd=password)
     else:
         raise CliException('Unknown authentication type.')
+
+    client.authenticate_with_container_registry()
 
 
 @cmd.command('push')

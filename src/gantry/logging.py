@@ -71,6 +71,10 @@ def init_logger(
 
     logger.addHandler(ch)
 
+    docker_logger = logging.getLogger('docker')
+    docker_logger.setLevel(logging.DEBUG)
+    docker_logger.addHandler(ch)
+
     # Create the file logger.
     if logfile is not None:
         fh = logging.FileHandler(logfile, 'w')

@@ -1,11 +1,14 @@
+import subprocess
 from typing import Literal
 
 import docker
+import docker.auth
 import docker.errors
 from docker.constants import DEFAULT_UNIX_SOCKET
-# from docker.errors import APIError, DockerException, ImageNotFound
 from docker.models.images import Image
 from docker.tls import TLSConfig
+
+from urllib3.util import Url
 
 from ._types import Path
 from .exceptions import (
@@ -60,7 +63,6 @@ class Docker:
         try:
             _logger.debug('Create Docker client.')
             self._client = docker.DockerClient(base_url=url, tls=tls)
-            self._dockercfg = config
         except docker.errors.DockerException as e:
             _logger.critical('Failed to create Docker client.', exc_info=e)
             raise DockerConnectionError() from e
@@ -104,35 +106,34 @@ class Docker:
             _logger.error('Cannot find an image called \'%s\'.', name)
             raise NoSuchImageError(name) from e
 
-    def login(self, registry: str, username: str, password: str | None = None) -> None:
+    def login(self, registry: Url, username: str, password: str) -> None:
         '''Log into a private registry.
 
         Parameters
         ----------
-        registry : str
+        registry : :class:`urllib3.util.Url`
             registry URL
         username : str
-            the user being authenticated; can also be an authentication token
+            the user to authenticate
         password : str, optional
             the password; may be skipped if the user name is an authentication
             token
         '''
-        login_args = {
-            'registry': registry,
-            'username': username
-        }
+        url = str(registry)
+        args = ['docker', 'login', '--username', username, '--password-stdin', url]
 
-        if password is not None:
-            login_args['password'] = password
+        result = subprocess.run(
+            args,
+            input=password.encode(),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT
+        )
 
-        if self._dockercfg is not None:
-            login_args['dockercfg_path'] = self._dockercfg.as_posix()
-
-        try:
-            result = self._client.login(**login_args)
-        except docker.errors.APIError as e:
-            _logger.error('Could not log in: %s', result['message'], exc_info=e)
-            raise RegistryAuthError(registry)
+        if result.returncode != 0:
+            _logger.error('Failed to login, see output:')
+            for line in result.stdout.splitlines():
+                _logger.error('  %s', line)
+            raise RegistryAuthError(url)
 
     @staticmethod
     def create_low_level_api(*, url: str = DEFAULT_UNIX_SOCKET) -> docker.APIClient:

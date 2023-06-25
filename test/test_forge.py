@@ -89,12 +89,13 @@ def test_set_basic_auth(tmp_path: Path) -> None:
 
 def test_set_token_auth(tmp_path: Path) -> None:
     mock = MockForge(tmp_path)
-    mock.set_token_auth(api_token='123456')
+    mock.set_token_auth(user='test', api_token='123456')
 
     with mock._auth_file.open('rt') as f:
         info = json.load(f)
 
     assert info['auth_type'] == AuthType.TOKEN
+    assert info['username'] == 'test'
     assert info['api_token'] == '123456'
 
 
