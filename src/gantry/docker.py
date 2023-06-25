@@ -10,7 +10,6 @@ from docker.tls import TLSConfig
 
 from urllib3.util import Url
 
-from ._types import Path
 from .exceptions import (
     DockerGenericError,
     DockerConnectionError,
@@ -33,10 +32,7 @@ class Docker:
     system.
     '''
 
-    def __init__(self, *,
-                 url: str = DEFAULT_UNIX_SOCKET,
-                 ca_certs: str | None = None,
-                 config: Path | None = None) -> None:
+    def __init__(self, *, url: str = DEFAULT_UNIX_SOCKET, ca_certs: str | None = None) -> None:
         '''
         Parameters
         ----------
@@ -133,6 +129,20 @@ class Docker:
             for line in result.stdout.splitlines():
                 _logger.error('  %s', line)
             raise RegistryAuthError(url)
+
+    def push_image(self, name: str) -> None:
+        '''Push an image to a registry.
+
+        Parameters
+        ----------
+        name : str
+            the image name; this should be a full name such a
+            ``registry.example.com/my-image:v1.2``
+        '''
+        _logger.debug('Pushing %s to registry.', name)
+        resp = self._client.images.push(name, stream=True, decode=True)
+        for line in resp:
+            print(line)
 
     @staticmethod
     def create_low_level_api(*, url: str = DEFAULT_UNIX_SOCKET) -> docker.APIClient:

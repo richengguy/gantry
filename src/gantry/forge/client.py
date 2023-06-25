@@ -5,11 +5,6 @@ from typing import TypedDict, NotRequired
 
 import certifi
 
-import docker
-from docker.constants import DEFAULT_UNIX_SOCKET
-from docker.errors import DockerException, ImageNotFound
-from docker.models.images import Image
-
 from urllib3 import PoolManager
 import urllib3.exceptions
 from urllib3.util import Url, parse_url
@@ -19,7 +14,6 @@ from .._types import Path
 from ..docker import Docker
 from ..exceptions import (
     CannotObtainForgeAuthError,
-    ClientConnectionError,
     ForgeApiOperationFailed,
     ForgeOperationNotSupportedError,
     ForgeUrlInvalidError,
@@ -113,7 +107,7 @@ class ForgeClient(ABC):
                     'have been provided.'
                 )
 
-        with Docker(ca_certs=self._ca_certs, config=self._docker_config) as client:
+        with Docker(ca_certs=self._ca_certs) as client:
             _logger.debug('Logging into container registry at %s', self.endpoint)
             client.login(self.endpoint, username, password)
 
@@ -153,30 +147,19 @@ class ForgeClient(ABC):
         if registry_url is None:
             raise ForgeUrlInvalidError('Missing the registry URL.', str(self._url))
 
-        # try:
-        #     _logger.debug('Create docker client.')
-        #     tls = docker.tls.TLSConfig(ca_cert=self._ca_certs)
-        #     client = docker.DockerClient(base_url=DEFAULT_UNIX_SOCKET, tls=tls)
-        #     image: Image = client.images.get(name)
+        should_tag = not name.startswith(registry_url)
+        if should_tag:
+            full_name = f'{registry_url}/{name}'
+        else:
+            full_name = name
 
-        #     _logger.debug('Push %s to registry.', name)
+        with Docker(ca_certs=self._ca_certs) as client:
+            if should_tag:
+                image = client.get_image(name)
+                image.tag(full_name)
+                _logger.debug('Tagged image as \'%s\'.', full_name)
 
-        #     if not name.startswith(registry_url):
-        #         name = f'{registry_url}/{name}'
-        #         image.tag(name)
-        #         _logger.debug('Tagged image as \'%s\'.', name)
-
-        #     resp = client.images.push(name, stream=True, decode=True, auth_config=auth_config)
-        #     for line in resp:
-        #         print(line)
-
-        # except ImageNotFound as e:
-        #     _logger.error('Could not find and image named \'%s\'.', name, exc_info=e)
-        #     raise ForgeApiOperationFailed(
-        #         self.provider_name(), 'Cannot find container image.')
-        # except DockerException as e:
-        #     _logger.critical('Failed to create Docker API client.', exc_info=e)
-        #     raise ClientConnectionError()
+            client.push_image(full_name)
 
     def set_basic_auth(self, *, user: str, passwd: str) -> None:
         '''Set the client to connect using HTTP basic authentication.

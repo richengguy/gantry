@@ -9,7 +9,7 @@ from ._common import ProgramOptions, print_header
 
 from .._types import Path
 from ..config import Config
-from ..exceptions import CliException, ForgeApiOperationFailed, GantryException
+from ..exceptions import CliException, GantryException
 from ..forge import make_client
 from ..logging import get_app_logger
 
