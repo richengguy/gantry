@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
+from collections.abc import Iterable, Sequence
 import logging
+from typing import Iterator, TypeVar
 
 from rich.console import Group
 from rich.live import Live
@@ -43,6 +45,7 @@ class ActivityDisplay(ABC):
             another rendering surface otherwise the `rich` library will produce
             an exception
         '''
+        self._console_output = Table.grid()
         self._display: 'ProcessDisplay' | None = None
         self._logger = logger
         self._process_name = 'console' if process_name is None else process_name
@@ -76,8 +79,8 @@ class ActivityDisplay(ABC):
         :class:`ProcessDisplay`
             the display context that a process uses to record its output
         '''
-        if self._started:
-            raise RuntimeError('Already called "start()".')
+        if self._display is not None:
+            return self._display
 
         console_output = Table.grid()
         console_output.add_column()
@@ -92,15 +95,25 @@ class ActivityDisplay(ABC):
             console_output
         )
 
-        return self._display.start()
+        self._display.start()
+        self._started = True
+        return self._display
 
     def stop(self) -> None:
         '''Stop the rendering.'''
         if self._display is not None:
             self._display.stop()
             del self._display
+            self._display = None
 
         self._surface.stop()
+        self._started = False
+
+    def __enter__(self) -> 'ProcessDisplay':
+        return self.start()
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        self.stop()
 
 
 class ConsoleActivityDisplay(ActivityDisplay):
@@ -153,15 +166,75 @@ class ConsoleActivityDisplay(ActivityDisplay):
             self._task_progress
         )
 
-    def __enter__(self) -> 'ProcessDisplay':
-        return self.start()
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
-        self.stop()
+class MultiActivityDisplay(ActivityDisplay):
+    '''Display the status from a sequence of processes.
 
+    This class acts as an iterator over a sequence to show both the individual
+    progress along with the overall progress.
+    '''
+    def __init__(self,
+                 stages: Sequence,
+                 logger: logging.Logger,
+                 *,
+                 description: str | None = None,
+                 process_name: str | None = None,
+                 surface: Live | None = None
+                 ) -> None:
+        '''
+        Parameters
+        ----------
+        stages : sequence
+            the sequence that the output will be generated from
+        logger : :class:`logging.Logger`
+            application logger instance
+        description : str, optional
+            if provided, this sets the progress bar's title, otherwise it will
+            just use a default string; cannot be used with the 'columns'
+            argument
+        process_name : str
+            user-friendly name of the running process; this should be kept short
+            as it gets prepended to the log output
+        surface : :class:`rich.live.Live`, optional
+            rendering surface; required if the display will be nested within
+            another rendering surface otherwise the `rich` library will produce
+            an exception
+        '''
+        super().__init__(logger, process_name=process_name, surface=surface)
+        self._stages = stages
+        self._task_progress = Progress(
+            TimeElapsedColumn(),
+            TextColumn('Stage'),
+            BarColumn()
+        )
+        self._total_progress = Progress(
+            TimeElapsedColumn(),
+            TextColumn('Running' if description is None else description),
+            BarColumn()
+        )
 
-class ConsoleMultiActivityDisplay:
-    ...
+    @property
+    def task_progress(self) -> Progress:
+        return self._task_progress
+
+    def _create_display_group(self, console_output: Table) -> Group:
+        return Group(
+            self._total_progress,
+            console_output,
+            self._task_progress,
+        )
+
+    def stage_iterator(self) -> Iterator:
+        if not self.is_started:
+            raise RuntimeError('Activity display must be running to use the iterator.')
+
+        task = self._total_progress.add_task('', start=True, total=len(self._stages))
+
+        for stage in self._stages:
+            yield stage
+            self._total_progress.update(task, advance=1)
+
+        self._total_progress.update(task, completed=True)
 
 
 class ProcessDisplay:
@@ -249,12 +322,20 @@ if __name__ == '__main__':
     from .logging import get_app_logger
     logger = get_app_logger('test')
 
-    with ConsoleActivityDisplay(logger, description='Test Process') as reporter:
-        reporter.print_output('Starting...')
-        for i in range(10):
-            reporter.print_output(f'Task {i+1}')
-            time.sleep(0.3)
-        reporter.print_error('There was an error!')
-        reporter.print_output('done!')
+    # with ConsoleActivityDisplay(logger, description='Test Process') as reporter:
+    #     reporter.print_output('Starting...')
+    #     for i in range(10):
+    #         reporter.print_output(f'Task {i+1}')
+    #         time.sleep(0.3)
+    #     reporter.print_error('There was an error!')
+    #     reporter.print_output('done!')
 
-    print('\n\n')
+    # print('\n\n')
+
+    x = [1, 2, 3]
+    multi_activity = MultiActivityDisplay(x, logger)
+    with multi_activity as reporter:
+        for stage in multi_activity.stage_iterator():
+            for i in range(10):
+                reporter.print_output(f'Stage {stage}; Task {i + 1}')
+                time.sleep(0.3)
