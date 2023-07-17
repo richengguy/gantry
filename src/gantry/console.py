@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterator, Sequence
 import logging
-from typing import Iterator, TypeVar
+from typing import Any
 
 from rich.console import Group
 from rich.live import Live
@@ -49,7 +49,6 @@ class ActivityDisplay(ABC):
         self._display: 'ProcessDisplay' | None = None
         self._logger = logger
         self._process_name = 'console' if process_name is None else process_name
-        self._started = False
         self._surface = Live() if surface is None else surface
 
     @property
@@ -69,7 +68,7 @@ class ActivityDisplay(ABC):
 
     @property
     def is_started(self) -> bool:
-        return self._started
+        return self._display is not None
 
     def start(self) -> 'ProcessDisplay':
         '''Start rendering to the activity display.
@@ -79,14 +78,14 @@ class ActivityDisplay(ABC):
         :class:`ProcessDisplay`
             the display context that a process uses to record its output
         '''
-        if self._display is not None:
-            return self._display
-
         console_output = Table.grid()
         console_output.add_column()
 
         self._surface.start(refresh=True)
         self._surface.update(self._create_display_group(console_output), refresh=True)
+
+        if self._display is not None:
+            return self._display
 
         self._display = ProcessDisplay(
             self._logger,
@@ -96,24 +95,29 @@ class ActivityDisplay(ABC):
         )
 
         self._display.start()
-        self._started = True
         return self._display
 
-    def stop(self) -> None:
-        '''Stop the rendering.'''
+    def stop(self, *, stop_surface: bool = True, clear_surface: bool = True) -> None:
+        '''Stop the rendering.
+
+        Parameters
+        ----------
+        stop_surface : bool
+            stop the rendering surface along with display context; default is
+            ``True``
+        '''
         if self._display is not None:
             self._display.stop()
             del self._display
             self._display = None
 
-        self._surface.stop()
-        self._started = False
+        if clear_surface:
+            console_output = Table.grid()
+            console_output.add_column()
+            self._surface.update(self._create_display_group(console_output), refresh=True)
 
-    def __enter__(self) -> 'ProcessDisplay':
-        return self.start()
-
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
-        self.stop()
+        if stop_surface:
+            self._surface.stop()
 
 
 class ConsoleActivityDisplay(ActivityDisplay):
@@ -155,6 +159,12 @@ class ConsoleActivityDisplay(ActivityDisplay):
             TextColumn('Running' if description is None else description),
             BarColumn()
         )
+
+    def __enter__(self) -> 'ProcessDisplay':
+        return self.start()
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        self.stop()
 
     @property
     def task_progress(self) -> Progress:
@@ -220,21 +230,19 @@ class MultiActivityDisplay(ActivityDisplay):
     def _create_display_group(self, console_output: Table) -> Group:
         return Group(
             self._total_progress,
-            console_output,
             self._task_progress,
+            console_output,
         )
 
-    def stage_iterator(self) -> Iterator:
-        if not self.is_started:
-            raise RuntimeError('Activity display must be running to use the iterator.')
-
+    def __iter__(self) -> Iterator[tuple[Any, 'ProcessDisplay']]:
         task = self._total_progress.add_task('', start=True, total=len(self._stages))
 
         for stage in self._stages:
-            yield stage
+            yield stage, self.start()
             self._total_progress.update(task, advance=1)
+            self.stop(stop_surface=False)
 
-        self._total_progress.update(task, completed=True)
+        self.stop(stop_surface=True)
 
 
 class ProcessDisplay:
@@ -333,9 +341,7 @@ if __name__ == '__main__':
     # print('\n\n')
 
     x = [1, 2, 3]
-    multi_activity = MultiActivityDisplay(x, logger)
-    with multi_activity as reporter:
-        for stage in multi_activity.stage_iterator():
-            for i in range(10):
-                reporter.print_output(f'Stage {stage}; Task {i + 1}')
-                time.sleep(0.3)
+    for stage, reporter in MultiActivityDisplay(x, logger, description='Running Multi-stages'):
+        for i in range(10):
+            reporter.print_output(f'Stage {stage}; Task {i + 1}')
+            time.sleep(0.3)
