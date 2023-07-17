@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from collections.abc import Callable, Iterator, Sequence
+from collections.abc import Callable, Collection, Iterator
 import logging
 from typing import TypeVar
 
@@ -188,7 +188,7 @@ class MultiActivityDisplay(ActivityDisplay):
     activity display.
     '''
     def __init__(self,
-                 stages: Sequence[T],
+                 stages: Collection[T],
                  logger: logging.Logger,
                  *,
                  description: str | None = None,
@@ -357,7 +357,7 @@ if __name__ == '__main__':
         reporter.print_output('done!')
 
     def stage_fn(stage: int) -> str:
-        return 'Stage {0}'.format(stage)
+        return f'Stage {stage}'
 
     print('\n\n')
 
