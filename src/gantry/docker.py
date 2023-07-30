@@ -1,5 +1,5 @@
 import subprocess
-from typing import Literal
+from typing import Literal, Iterator
 
 import docker
 import docker.auth
@@ -140,9 +140,31 @@ class Docker:
             ``registry.example.com/my-image:v1.2``
         '''
         _logger.debug('Pushing %s to registry.', name)
+        resp = self._client.images.push(name)
+        _logger.debug('Docker Output:')
+        _logger.debug('%s', resp)
+
+    def push_image_streaming(self, name: str) -> Iterator[str]:
+        '''Push an image to a repository.
+
+        Parameters
+        ----------
+        name : str
+            the image name; this should be a full name such a
+            ``registry.example.com/my-image:v1.2``
+
+        Yields
+        ------
+        str
+            the processed output from the Docker client, as a blocking generator
+        '''
+        _logger.debug('Pushing %s to registry.', name)
         resp = self._client.images.push(name, stream=True, decode=True)
-        for line in resp:
-            print(line)
+        for item in resp:
+            if 'error' in item:
+                yield item['error']
+            if 'status' in item:
+                yield item['status']
 
     @staticmethod
     def create_low_level_api(*, url: str = DEFAULT_UNIX_SOCKET) -> docker.APIClient:
