@@ -80,6 +80,7 @@ class GenerateManifestFile:
             for service in service_group
         ])
         manifest.save(self._build_folder / 'manifest.json')
+        _logger.debug('Generated manifest at %s', self._build_folder / 'manifest.json')
 
 
 class ImageTarget(Target):

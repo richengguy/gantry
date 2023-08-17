@@ -5,6 +5,7 @@ from ._common import CopyServiceResources, Pipeline, Target
 from .. import routers
 from .._compose_spec import ComposeService
 from .._types import Path, PathLike
+from ..build_manifest import BuildManifest, DockerComposeEntry
 from ..exceptions import ComposeServiceBuildError
 from ..logging import get_app_logger
 from ..services import ServiceDefinition, ServiceGroupDefinition
@@ -151,6 +152,20 @@ class BuildRouterConfig:
         _logger.debug('Built router config to \'%s\'', config_file)
 
 
+class GenerateManifestFile:
+    def __init__(self, build_folder: Path, compose_file: Path) -> None:
+        self._build_folder = build_folder
+        self._compose_file = compose_file
+
+    def run(self, service_group: ServiceGroupDefinition) -> None:
+        manifest_json = self._build_folder / 'manifest.json'
+        manifest = BuildManifest(entries=[
+            DockerComposeEntry(self._compose_file.relative_to(self._build_folder), True)
+        ])
+        manifest.save(manifest_json)
+        _logger.debug('Generated manifest at %s', manifest_json)
+
+
 class ComposeTarget(Target):
     '''Convert a service group into a Docker Compose file.'''
     def __init__(self, output: PathLike, overwrite: bool = False) -> None:
@@ -161,10 +176,12 @@ class ComposeTarget(Target):
         if self._output.exists() and not self._overwrite:
             raise ComposeServiceBuildError(f'Cannot build services; {output} already exists.')
 
+        compose_file = self._output / 'docker-compose.yml'
         self._pipeline = Pipeline(stages=[
-            BuildComposeFile(self._output / 'docker-compose.yml'),
+            BuildComposeFile(compose_file),
             BuildRouterConfig(self._output),
             CopyServiceResources(self._output),
+            GenerateManifestFile(self._output, compose_file),
         ])
 
     def build(self, service_group: ServiceGroupDefinition) -> None:
