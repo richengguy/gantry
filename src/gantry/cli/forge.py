@@ -193,8 +193,11 @@ def cmd_push(opts: ProgramOptions, manifest: Path) -> None:
         console = Console()
         for item in manifest_contents:
             image = item['image']
-            console.print(f'Push [bold]{image}[/bold]')
-            client.push_image(image)
+            with console.status(f'Pushing [bold]{image}[/bold]'):
+                client.push_image(image)
+                console.print(
+                    f'[bold green]\u2713[/bold green] Pushed [bold]{image}[/bold]',
+                    highlight=False)
     except GantryException as e:
         _logger.exception('%s', str(e), exc_info=e)
         raise CliException('Push failed...run with \'gantry -d\' to see traceback.')

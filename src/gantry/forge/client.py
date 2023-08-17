@@ -130,7 +130,8 @@ class ForgeClient(ABC):
             if the client failed to get the server version
         '''
 
-    def push_image(self, name: str, status_fn: Callable[[PushStatus], None] | None = None) -> None:
+    def push_image(self, name: str, *,
+                   status_fn: Callable[[PushStatus], None] | None = None) -> None:
         '''Push an image to the forge's container registry.
 
         The client will automatically tag the image (if needed) so it can be
