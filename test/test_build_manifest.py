@@ -18,12 +18,12 @@ def test_create_manifest(tmp_path: Path) -> None:
     assert len(items['contents']) == 2
 
     assert items['contents'][0]['type'] == 'docker-compose'
-    assert items['contents'][0]['compose-file'] == './folders/docker-compose.yml'
+    assert items['contents'][0]['compose-file'] == 'folder/docker-compose.yml'
     assert not items['contents'][0]['is-deployable']
 
     assert items['contents'][1]['type'] == 'image'
     assert items['contents'][1]['image'] == 'repo/image:1234'
-    assert items['contents'][1]['source'] == './folder/Dockerfile'
+    assert items['contents'][1]['source'] == 'folder/Dockerfile'
 
 
 def test_load_manifest(samples_folder: Path) -> None:

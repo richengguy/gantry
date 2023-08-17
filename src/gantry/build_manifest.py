@@ -1,4 +1,5 @@
-from dataclasses import dataclass
+from abc import ABC, abstractmethod
+from dataclasses import dataclass, KW_ONLY
 from enum import Enum
 import json
 from typing import Iterator, cast
@@ -20,11 +21,12 @@ class EntryType(str, Enum):
     '''The entry is a service container image.'''
 
 
-@dataclass
-class Entry:
+class Entry(ABC):
     '''Base class of all manifest entries.'''
-    type: EntryType
-    '''The type of the entry.'''
+    @property
+    @abstractmethod
+    def type(self) -> EntryType:
+        '''The manifest entry type.'''
 
     def to_dict(self) -> dict:
         return {'type': self.type.value}
@@ -37,6 +39,7 @@ class DockerComposeEntry(Entry):
     '''Path to the docker-compose.yml file.'''
     is_deployable: bool
     '''Indicate if the compose file, and it's parent folder, are deployable.'''
+    _ = KW_ONLY
 
     def __post_init__(self) -> None:
         if self.compose_file.name != 'docker-compose.yml':
@@ -48,6 +51,10 @@ class DockerComposeEntry(Entry):
     def source_folder(self) -> Path:
         '''Path to the folder containing the docker-compose.yml file.'''
         return self.compose_file.parent
+
+    @property
+    def type(self) -> EntryType:
+        return EntryType.DOCKER_COMPOSE
 
     def to_dict(self) -> dict:
         entry = super().to_dict()
@@ -74,6 +81,10 @@ class ImageEntry(Entry):
         '''Path to the folder containing the Dockerfile.'''
         return self.source.parent
 
+    @property
+    def type(self) -> EntryType:
+        return EntryType.IMAGE
+
     def to_dict(self) -> dict:
         entry = super().to_dict()
         entry['image'] = self.image
@@ -83,14 +94,14 @@ class ImageEntry(Entry):
 
 class BuildManifest:
     '''Defines the contents of a gantry build.'''
-    def __init__(self, *, entries: list[Entry] = []) -> None:
+    def __init__(self, *, entries: list[Entry] | None = None) -> None:
         '''
         Parameters
         ----------
         entries : list of :class:`Entry`
             the entries to use in the manifest; defaults to an empty list
         '''
-        self._entries: list[Entry] = entries
+        self._entries: list[Entry] = entries if entries is not None else []
 
     def append_entry(self, entry: Entry) -> None:
         '''Add an entry to the end of the manifest.
@@ -171,7 +182,7 @@ class BuildManifest:
             parsed = json.load(f)
 
         errors = validate_object(parsed, Schema.BUILD_MANIFEST)
-        if len(errors) == 0:
+        if len(errors) != 0:
             raise BuildManifestValidationError(errors)
 
         manifest = BuildManifest()
@@ -181,7 +192,6 @@ class BuildManifest:
                 case EntryType.DOCKER_COMPOSE:
                     manifest.append_entry(
                         DockerComposeEntry(
-                            EntryType.DOCKER_COMPOSE,
                             Path(item['compose-file']),
                             item.get('is-deployable', True)
                         )
@@ -189,7 +199,6 @@ class BuildManifest:
                 case EntryType.IMAGE:
                     manifest.append_entry(
                         ImageEntry(
-                            EntryType.IMAGE,
                             item['image'],
                             Path(item['source'])
                         )
