@@ -1,10 +1,10 @@
-import json
 import shutil
 from typing import Iterator
 
 from ._common import CopyServiceResources, Pipeline, Target
 
 from .._types import Path, PathLike
+from ..build_manifest import BuildManifest, ImageEntry
 from ..console import MultiActivityDisplay
 from ..docker import Docker
 from ..exceptions import ServiceImageBuildError
@@ -74,16 +74,12 @@ class GenerateManifestFile:
         self._tag = tag
 
     def run(self, service_group: ServiceGroupDefinition) -> None:
-        manifest: list[dict[str, str]] = []
-        for service in service_group:
-            manifest.append({
-                'image': _create_image_name(self._namespace, self._tag, service),
-                'service': service.name
-            })
-
-        manifest_json = self._build_folder / 'manifest.json'
-        with manifest_json.open('wt') as f:
-            json.dump(manifest, f, indent=2)
+        manifest = BuildManifest(entries=[
+            ImageEntry(_create_image_name(self._namespace, self._tag, service),
+                       Path(service.name) / 'Dockerfile')
+            for service in service_group
+        ])
+        manifest.save(self._build_folder / 'manifest.json')
 
 
 class ImageTarget(Target):
