@@ -21,6 +21,13 @@ jobs:
           conda run -n gantry --live-stream pip install --upgrade pip setuptools
           conda run -n gantry --live-stream flit install
 
+      # Using the solution from https://github.com/actions/runner/issues/1456#issuecomment-1676495453
+      - name: Install Docker (macOS only)
+        if: runner.os == 'macos'
+        run: |
+          brew install docker
+          colima start
+
       - name: Run flake8.
         run: conda run -n gantry --live-stream flake8 src
 
