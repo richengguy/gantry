@@ -42,3 +42,31 @@ def test_load_manifest(samples_folder: Path) -> None:
     assert len(compose_files) == 1
     assert compose_files[0].compose_file == Path('./docker-compose.yml')
     assert compose_files[0].is_deployable
+
+
+def test_roundtrip_manifest(tmp_path: Path) -> None:
+    manifest = BuildManifest(entries=[
+        DockerComposeEntry(Path('./first-service/docker-compose.yml'), True),
+        ImageEntry('repo/image:1234', Path('./second-service/Dockerfile')),
+        DockerComposeEntry(Path('./third-service/docker-compose.yml'), False)
+    ])
+
+    # Serialize
+    json_file = tmp_path / 'manifest.json'
+    manifest.save(json_file)
+
+    # Deserialize
+    loaded_manifest = BuildManifest.load(json_file)
+    assert loaded_manifest.num_entries() == 3
+
+    compose_entries = list(loaded_manifest.docker_compose_entries())
+    assert len(compose_entries) == 2
+    assert compose_entries[0].source_folder.name == 'first-service'
+    assert compose_entries[0].is_deployable
+    assert compose_entries[1].source_folder.name == 'third-service'
+    assert not compose_entries[1].is_deployable
+
+    image_entries = list(loaded_manifest.image_entries())
+    assert len(image_entries) == 1
+    assert image_entries[0].image == 'repo/image:1234'
+    assert image_entries[0].source_folder.name == 'second-service'
