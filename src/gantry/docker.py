@@ -230,7 +230,7 @@ class Docker:
             yield PushStatus.create(item)
 
     @staticmethod
-    def create_low_level_api(*, url: str = DEFAULT_UNIX_SOCKET) -> docker.APIClient:
+    def create_low_level_api(*, url: str | None = None) -> docker.APIClient:
         '''Create the Docker low-level API client.
 
         This will create an instance of :class:`docker.APIClient` that
@@ -242,9 +242,11 @@ class Docker:
 
         Parameters
         ----------
-        url : str
+        url : str, optional
             URL for the client to connect to; defaults to the standard UNIX
-            socket
+            socket on Linux and will also check for
+            ``~/.docker/run/docker.sock`` on macOS (in case this is running with
+            Docker Desktop for macOS)
 
         Returns
         -------
@@ -256,6 +258,12 @@ class Docker:
         :exc:`DockerConnectionError`
             if the client could not be created
         '''
+        if url is None:
+            socket = _resolve_docker_socket()
+            if socket is None:
+                raise DockerConnectionError()
+            url = socket
+
         try:
             _logger.debug('Create low-level Docker API client.')
             return docker.APIClient(base_url=url)
