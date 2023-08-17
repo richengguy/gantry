@@ -76,12 +76,18 @@ class CopyServiceResources:
     This wraps :func:`copy_service_resources` to allow it to be used as a stage
     in a build pipeline.
     '''
-    def __init__(self, folder: Path) -> None:
+    def __init__(self, folder: Path, *, use_group_name: bool = False) -> None:
         self._folder = folder
+        self._use_group_name = use_group_name
 
     def run(self, service_group: ServiceGroupDefinition) -> None:
-        _logger.debug('Copying service resources to \'%s\'.', self._folder)
-        copy_services_resources(service_group, self._folder)
+        if self._use_group_name:
+            folder = self._folder / service_group.name
+        else:
+            folder = self._folder
+
+        _logger.debug('Copying service resources to \'%s\'.', folder)
+        copy_services_resources(service_group, folder)
 
 
 def copy_services_resources(service_group: ServiceGroupDefinition, folder: Path) -> None:

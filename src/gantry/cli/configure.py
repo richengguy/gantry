@@ -19,16 +19,25 @@ def cmd():
 
 
 @cmd.command('compose')
-@click.option('--services', '-s', default='./services',
-              help='Folder containing the service definitions. Default is \'./services\'.',
-              type=click.Path(exists=True, file_okay=False, dir_okay=True, path_type=Path))
-@click.option('--output', '-o', default='./services.docker',
-              help='Output folder for Compose services.  Default is \'./services.docker\'.',
-              type=click.Path(exists=False, file_okay=False, dir_okay=True, path_type=Path))
-@click.option('--force', '-f', 'force_overwrite', is_flag=True,
-              help='Allow an existing output folder to be overwritten.')
-def cmd_compose(services: Path, output: Path, force_overwrite: bool):
-    '''Generate a Docker Compose configuration.
+@click.option(
+    '--output', '-o',
+    metavar='OUTPUT',
+    default='./build/services.compose',
+    help='Output folder for Compose services.  Default is \'./build/services.compose\'.',
+    type=click.Path(exists=False, file_okay=False, dir_okay=True, path_type=Path)
+)
+@click.option(
+    '--force', '-f', 'force_overwrite',
+    is_flag=True,
+    help='Allow an existing output folder to be overwritten.'
+)
+@click.argument(
+    'services',
+    metavar='PATH',
+    type=click.Path(exists=True, file_okay=False, dir_okay=True, path_type=Path)
+)
+def cmd_compose(output: Path, force_overwrite: bool, services: Path):
+    '''Generate a Docker Compose configuration from a service group at PATH.
 
     The Compose configuration will generate a folder for everything needed to
     bring up all services on a Docker host.  The folder just needs to be placed
