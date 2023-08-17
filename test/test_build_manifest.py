@@ -1,7 +1,10 @@
 import json
 from pathlib import Path
 
+import pytest
+
 from gantry.build_manifest import BuildManifest, DockerComposeEntry, ImageEntry
+from gantry.exceptions import BuildManifestValidationError
 
 
 def test_create_manifest(tmp_path: Path) -> None:
@@ -70,3 +73,10 @@ def test_roundtrip_manifest(tmp_path: Path) -> None:
     assert len(image_entries) == 1
     assert image_entries[0].image == 'repo/image:1234'
     assert image_entries[0].source_folder.name == 'second-service'
+
+
+def test_check_exceptions(samples_folder: Path) -> None:
+    with pytest.raises(BuildManifestValidationError) as exc:
+        BuildManifest.load(samples_folder / 'manifests' / 'bad-manifest.json')
+
+    assert len(exc.value.errors) == 2
