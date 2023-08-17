@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import subprocess
 from typing import Literal, Iterator
 
@@ -20,6 +21,12 @@ from .logging import get_app_logger
 
 
 _logger = get_app_logger()
+
+
+@dataclass(frozen=True)
+class PushStatus:
+    msg: str
+    error: bool
 
 
 class Docker:
@@ -144,7 +151,7 @@ class Docker:
         _logger.debug('Docker Output:')
         _logger.debug('%s', resp)
 
-    def push_image_streaming(self, name: str) -> Iterator[str]:
+    def push_image_streaming(self, name: str) -> Iterator[PushStatus]:
         '''Push an image to a repository.
 
         Parameters
@@ -164,9 +171,9 @@ class Docker:
         resp = self._client.images.push(name, stream=True, decode=True)
         for item in resp:
             if 'error' in item:
-                yield item['error']
+                yield PushStatus(item['error'], True)
             if 'status' in item:
-                yield item['status']
+                yield PushStatus(item['status'], False)
 
     @staticmethod
     def create_low_level_api(*, url: str = DEFAULT_UNIX_SOCKET) -> docker.APIClient:

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from enum import StrEnum
 import json
-from typing import TypedDict, NotRequired
+from typing import Callable, TypedDict, NotRequired
 
 import certifi
 
@@ -11,7 +11,7 @@ from urllib3.util import Url, parse_url
 
 from .. import __version__
 from .._types import Path
-from ..docker import Docker
+from ..docker import Docker, PushStatus
 from ..exceptions import (
     CannotObtainForgeAuthError,
     ForgeApiOperationFailed,
@@ -130,7 +130,7 @@ class ForgeClient(ABC):
             if the client failed to get the server version
         '''
 
-    def push_image(self, name: str) -> None:
+    def push_image(self, name: str, status_fn: Callable[[PushStatus], None] | None = None) -> None:
         '''Push an image to the forge's container registry.
 
         The client will automatically tag the image (if needed) so it can be
@@ -142,6 +142,9 @@ class ForgeClient(ABC):
         ----------
         name : str
             name of the image to push
+        status_fn : callable, optional
+            accepts a callable object that takes in a :class:`PushStatus`
+            object that provides the current state of the push operation
         '''
         registry_url = self._url.host
         if registry_url is None:
@@ -159,7 +162,11 @@ class ForgeClient(ABC):
                 image.tag(full_name)
                 _logger.debug('Tagged image as \'%s\'.', full_name)
 
-            client.push_image(full_name)
+            if status_fn is None:
+                client.push_image(full_name)
+            else:
+                for resp in client.push_image_streaming(full_name):
+                    status_fn(resp)
 
     def set_basic_auth(self, *, user: str, passwd: str) -> None:
         '''Set the client to connect using HTTP basic authentication.
