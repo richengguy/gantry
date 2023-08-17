@@ -4,10 +4,10 @@ function get_state() {
     docker compose ps --format json | jq "map(select(.Name == \"$1\"))" | jq -r '.[0].State'
 }
 
-gantry configure compose -s $SAMPLE_FOLDER -o $OUTPUT_FOLDER
+gantry configure -p compose -o $OUTPUT_FOLDER $SAMPLE_FOLDER
 
 # Build the sample docker images and verify it can be brought up successfully.
-cd $OUTPUT_FOLDER
+cd $OUTPUT_FOLDER/simple-tls
 docker compose build
 docker compose up -d
 
