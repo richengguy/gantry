@@ -22,6 +22,7 @@
                 "image": {
                     "title": "Image Name",
                     "description": "The complete image name, including any tags.",
+                    "pattern": "^(.*)/(.*):(.*)",
                     "type": "string"
                 },
                 "source": {
@@ -43,12 +44,19 @@
                     "$ref": "#/$defs/manifestEntry",
                     "const": "docker-compose"
                 },
-                "path": {
-                    "title": "Path to compose folder",
-                    "type": "string"
+                "compose-file": {
+                    "title": "Path to docker-compose.yml file.",
+                    "type": "string",
+                    "pattern": "^(.*)/docker-compose.yml"
+                },
+                "is-deployable": {
+                    "title": "Can the compose file be deployed?",
+                    "description": "Setting this to `false` indicates that the folder containing the docker-compose.yml doesn't contain all of the resources for it to be deployed.",
+                    "type": "boolean"
                 }
             },
-            "required": ["type", "path"]
+            "required": ["type", "compose-file"],
+            "additionalProperties": false
         }
     },
     "properties": {
