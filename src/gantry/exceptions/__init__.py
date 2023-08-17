@@ -1,9 +1,18 @@
+from ._base import GantryException
+
 from .cli import CliException
 
 from .config import (
     ConfigException,
     ConfigFileValidationError,
     InvalidConfigValueError,
+)
+
+from .docker import (
+    DockerGenericError,
+    DockerConnectionError,
+    NoSuchImageError,
+    RegistryAuthError
 )
 
 from .forge import (

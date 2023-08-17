@@ -1,4 +1,5 @@
 from abc import ABC
+from collections.abc import Collection
 import os.path
 from pathlib import Path
 from typing import Iterator, NamedTuple
@@ -216,7 +217,7 @@ class ServiceDefinition(_ServiceDefinitionBase):
         self._definition['metadata'][key] = value
 
 
-class ServiceGroupDefinition(_ServiceDefinitionBase):
+class ServiceGroupDefinition(_ServiceDefinitionBase, Collection[ServiceDefinition]):
     '''Define a group of services that run on a Docker host.
 
     Services in the service group can be accessed either using both the
@@ -253,6 +254,9 @@ class ServiceGroupDefinition(_ServiceDefinitionBase):
             name: ServiceDefinition(folder=self.folder / name)
             for name in self._definition['services']
         }
+
+    def __contains__(self, value: object) -> bool:
+        return value in self._definition['services']
 
     def __len__(self) -> int:
         if self.folder is None:

@@ -70,7 +70,7 @@ def print_workflow_command(entry: MyPyEntry):
 
 def run_mypy() -> tuple[int, list[str]]:
     mypy = [
-        'mypy', 'src',
+        'mypy', 'src/gantry/',
         '--no-error-summary',
         '--show-column-numbers',
         '--show-error-codes'

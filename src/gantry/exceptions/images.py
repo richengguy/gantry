@@ -1,4 +1,7 @@
-class ImageTargetException(Exception):
+from ._base import GantryException
+
+
+class ImageTargetException(GantryException):
     '''Base class for all exceptions when building container images.'''
     def __init__(self, *args: object) -> None:
         super().__init__(*args)

@@ -3,10 +3,11 @@ from typing import NamedTuple
 
 from jsonschema.exceptions import ValidationError
 
+from ._base import GantryException
 from .._types import PathLike
 
 
-class ServiceConfigurationException(Exception):
+class ServiceConfigurationException(GantryException):
     '''Base class for all service manager exceptions.'''
     def __init__(self, *args: object) -> None:
         super().__init__(*args)

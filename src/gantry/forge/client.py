@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from enum import StrEnum
 import json
-from typing import TypedDict, NotRequired
+from typing import Callable, TypedDict, NotRequired
 
 import certifi
 
@@ -11,9 +11,11 @@ from urllib3.util import Url, parse_url
 
 from .. import __version__
 from .._types import Path
+from ..docker import Docker, PushStatus
 from ..exceptions import (
     CannotObtainForgeAuthError,
     ForgeApiOperationFailed,
+    ForgeOperationNotSupportedError,
     ForgeUrlInvalidError,
 )
 from ..logging import get_app_logger
@@ -63,6 +65,7 @@ class ForgeClient(ABC):
         '''
         provider_folder = app_folder / self.provider_name()
         self._auth_file = provider_folder / 'auth.json'
+        self._docker_config = provider_folder / 'docker.json'
 
         try:
             self._url = parse_url(url)
@@ -79,10 +82,34 @@ class ForgeClient(ABC):
         self._load_auth_info()
         self._update_headers()
 
+        self._ca_certs = self._resolve_certs(app_folder)
+
         self._http = PoolManager(
             cert_reqs='CERT_REQUIRED',
-            ca_certs=self._resolve_certs(app_folder)
+            ca_certs=self._ca_certs
         )
+
+    def authenticate_with_container_registry(self) -> None:
+        '''Authenticate with the forge's container registry.'''
+        username: str
+        password: str | None
+        match self._auth_info['auth_type']:
+            case AuthType.BASIC:
+                username = self._auth_info['username']
+                password = self._auth_info['password']
+            case AuthType.TOKEN:
+                username = self._auth_info['username']
+                password = self._auth_info['api_token']
+            case AuthType.NONE:
+                raise ForgeOperationNotSupportedError(
+                    self.provider_name(),
+                    'Registry authentication requires forge credentials to '
+                    'have been provided.'
+                )
+
+        with Docker(ca_certs=self._ca_certs) as client:
+            _logger.debug('Logging into container registry at %s', self.endpoint)
+            client.login(self.endpoint, username, password)
 
     @abstractmethod
     def get_server_version(self) -> str:
@@ -103,6 +130,45 @@ class ForgeClient(ABC):
             if the client failed to get the server version
         '''
 
+    def push_image(self, name: str, *,
+                   status_fn: Callable[[PushStatus], None] | None = None) -> None:
+        '''Push an image to the forge's container registry.
+
+        The client will automatically tag the image (if needed) so it can be
+        pushed to the forge's private registry.  For example, if the image name
+        is ``image:v1.2`` then a new image name, referencing the original, will
+        be created called ``registry.example.com/image:v1.2``.
+
+        Parameters
+        ----------
+        name : str
+            name of the image to push
+        status_fn : callable, optional
+            accepts a callable object that takes in a :class:`PushStatus`
+            object that provides the current state of the push operation
+        '''
+        registry_url = self._url.host
+        if registry_url is None:
+            raise ForgeUrlInvalidError('Missing the registry URL.', str(self._url))
+
+        should_tag = not name.startswith(registry_url)
+        if should_tag:
+            full_name = f'{registry_url}/{name}'
+        else:
+            full_name = name
+
+        with Docker(ca_certs=self._ca_certs) as client:
+            if should_tag:
+                image = client.get_image(name)
+                image.tag(full_name)
+                _logger.debug('Tagged image as \'%s\'.', full_name)
+
+            if status_fn is None:
+                client.push_image(full_name)
+            else:
+                for resp in client.push_image_streaming(full_name):
+                    status_fn(resp)
+
     def set_basic_auth(self, *, user: str, passwd: str) -> None:
         '''Set the client to connect using HTTP basic authentication.
 
@@ -118,7 +184,7 @@ class ForgeClient(ABC):
         self._update_headers()
         self._store_auth_info()
 
-    def set_token_auth(self, *, api_token: str) -> None:
+    def set_token_auth(self, *, user: str, api_token: str) -> None:
         '''Set the client to connect using token authentication.
 
         The exact meaning of "token authentication" will be specific to the
@@ -126,13 +192,20 @@ class ForgeClient(ABC):
 
         Parameters
         ----------
+        user : str
+            user the API token is associated with
         api_token : str
-            API tokent
+            API token
         '''
         _logger.debug('Setting %s to use API token authentication.', self.provider_name())
-        self._auth_info = ForgeAuth(auth_type=AuthType.TOKEN, api_token=api_token)
+        self._auth_info = ForgeAuth(auth_type=AuthType.TOKEN, api_token=api_token, username=user)
         self._update_headers()
         self._store_auth_info()
+
+    @property
+    def ca_certs(self) -> str:
+        '''str: Path to the root CA certs used by the forge provider.'''
+        return self._ca_certs
 
     @property
     @abstractmethod

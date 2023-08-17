@@ -1,6 +1,8 @@
 from typing import Callable
 
 from gantry._compose_spec import ComposeBuild, ComposeFile
+from gantry._types import Path
+from gantry.services import ServiceGroupDefinition
 
 import pytest
 
@@ -53,3 +55,12 @@ def test_build_args(service: str, expected_args: dict[str, str | int],
     build_info = _get_build_info(compose_file, service)
     assert build_info.get('args', {}) == expected_args
     assert build_info['context'] == service
+
+
+def test_collection_interface(samples_folder: Path) -> None:
+    service_group = ServiceGroupDefinition(samples_folder / 'service-definition' / 'entrypoints')
+    expected = ['complex-entrypoint', 'default', 'string-entrypoint']
+    assert len(service_group) == 3
+    assert list(service.name for service in service_group) == expected
+    for service in expected:
+        assert service in service_group

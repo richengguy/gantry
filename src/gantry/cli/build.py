@@ -87,14 +87,14 @@ def cmd(options: ProgramOptions,
     print_header()
 
     if config := options.config:
-        registry = config.registry_namespace
+        namespace = config.registry_namespace
     else:
         get_app_logger().info('Performing image build without a gantry configuration.')
-        registry = None
+        namespace = None
 
     version = _generate_version(tag, build_number)
     service_group = load_service_group(services_path)
     try:
-        ImageTarget(registry, version, output_path, skip_build=skip_build).build(service_group)
+        ImageTarget(namespace, version, output_path, skip_build=skip_build).build(service_group)
     except ImageTargetException:
         raise CliException('Failed to build service images.')
