@@ -9,21 +9,11 @@ from ..exceptions import CliException, ComposeServiceBuildError
 from ..targets import ComposeTarget
 
 
-@click.group('configure')
-def cmd():
-    '''Generate configurations that will deploy service containers.
-
-    Services are deployed by converting a service group definition into the
-    configurations for their equivalent targets.
-    '''
-
-
-@cmd.command('compose')
+@click.command('configure')
 @click.option(
     '--output', '-o',
     metavar='OUTPUT',
-    default='./build/services.compose',
-    help='Output folder for Compose services.  Default is \'./build/services.compose\'.',
+    help='Output folder for configured services.  Default is \'./build/services.[SERVICE]\'.',
     type=click.Path(exists=False, file_okay=False, dir_okay=True, path_type=Path)
 )
 @click.option(
@@ -31,17 +21,31 @@ def cmd():
     is_flag=True,
     help='Allow an existing output folder to be overwritten.'
 )
+@click.option(
+    '--platform', '-p',
+    metavar='PLATFORM',
+    type=click.Choice(['compose'], case_sensitive=False),
+    default='compose',
+    help='The container orchestration platform.  Default is "compose".'
+)
 @click.argument(
     'services',
     metavar='PATH',
     type=click.Path(exists=True, file_okay=False, dir_okay=True, path_type=Path)
 )
-def cmd_compose(output: Path, force_overwrite: bool, services: Path):
-    '''Generate a Docker Compose configuration from a service group at PATH.
+def cmd(output: Path | None,
+        force_overwrite: bool,
+        platform: str,
+        services: Path):
+    '''Generate configurations that will deploy service containers.
 
-    The Compose configuration will generate a folder for everything needed to
-    bring up all services on a Docker host.  The folder just needs to be placed
-    onto the host and then started with `docker compose up -d`.'''
+    Services are deployed by converting a service group definition into the
+    configurations for their equivalent targets.  The resulting configurations
+    will be stored in the output directory specified by the '-o' option.
+    '''
+    if output is None:
+        output = Path('./build') / f'services.{platform}'
+
     print_header()
 
     service_group = load_service_group(services)
