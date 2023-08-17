@@ -1,4 +1,5 @@
 from dataclasses import dataclass, KW_ONLY
+import platform
 import subprocess
 from typing import cast, Literal, Iterator
 
@@ -11,6 +12,7 @@ from docker.tls import TLSConfig  # type: ignore
 
 from urllib3.util import Url
 
+from ._types import Path
 from .exceptions import (
     DockerGenericError,
     DockerConnectionError,
@@ -21,6 +23,31 @@ from .logging import get_app_logger
 
 
 _logger = get_app_logger()
+
+
+def _resolve_docker_socket() -> str | None:
+    socket_dir = Path('run') / 'docker.sock'
+    default_socket = Path('/var') / socket_dir
+    macos_alt_socket = Path.home() / '.docker' / socket_dir
+
+    system = platform.system()
+    match system:
+        case 'Darwin':
+            if default_socket.exists():
+                return DEFAULT_UNIX_SOCKET
+            elif macos_alt_socket.exists():
+                return f'unix://{macos_alt_socket.as_posix()}'
+            else:
+                _logger.error(
+                    'Cannot find the default macOS Docker socket.  This is '
+                    'usually `/var/run/docker.sock` or `~/.docker/run/docker.sock.'
+                )
+        case 'Linux':
+            return DEFAULT_UNIX_SOCKET
+        case _:
+            _logger.error('gantry does not support using Docker on %s.', system)
+
+    return None
 
 
 @dataclass(frozen=True)
@@ -61,13 +88,15 @@ class Docker:
     system.
     '''
 
-    def __init__(self, *, url: str = DEFAULT_UNIX_SOCKET, ca_certs: str | None = None) -> None:
+    def __init__(self, *, url: str | None = None, ca_certs: str | None = None) -> None:
         '''
         Parameters
         ----------
-        url : str
+        url : str, optional
             URL for the client to connect to; defaults to the standard UNIX
-            socket
+            socket on Linux and will also check for
+            ``~/.docker/run/docker.sock`` on macOS (in case this is running with
+            Docker Desktop for macOS)
         ca_certs : str, optional
             path to a CA certificate bundle to allow Docker to work with private
             certificate authorities
@@ -84,6 +113,12 @@ class Docker:
             tls = False
         else:
             tls = TLSConfig(ca_cert=ca_certs)
+
+        if url is None:
+            socket = _resolve_docker_socket()
+            if socket is None:
+                raise DockerConnectionError()
+            url = socket
 
         try:
             _logger.debug('Create Docker client.')
@@ -195,7 +230,7 @@ class Docker:
             yield PushStatus.create(item)
 
     @staticmethod
-    def create_low_level_api(*, url: str = DEFAULT_UNIX_SOCKET) -> docker.APIClient:
+    def create_low_level_api(*, url: str | None = None) -> docker.APIClient:
         '''Create the Docker low-level API client.
 
         This will create an instance of :class:`docker.APIClient` that
@@ -207,9 +242,11 @@ class Docker:
 
         Parameters
         ----------
-        url : str
+        url : str, optional
             URL for the client to connect to; defaults to the standard UNIX
-            socket
+            socket on Linux and will also check for
+            ``~/.docker/run/docker.sock`` on macOS (in case this is running with
+            Docker Desktop for macOS)
 
         Returns
         -------
@@ -221,6 +258,12 @@ class Docker:
         :exc:`DockerConnectionError`
             if the client could not be created
         '''
+        if url is None:
+            socket = _resolve_docker_socket()
+            if socket is None:
+                raise DockerConnectionError()
+            url = socket
+
         try:
             _logger.debug('Create low-level Docker API client.')
             return docker.APIClient(base_url=url)
