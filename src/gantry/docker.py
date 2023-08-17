@@ -2,12 +2,12 @@ from dataclasses import dataclass, KW_ONLY
 import subprocess
 from typing import cast, Literal, Iterator
 
-import docker
-import docker.auth
-import docker.errors
-from docker.constants import DEFAULT_UNIX_SOCKET
-from docker.models.images import Image
-from docker.tls import TLSConfig
+import docker  # type: ignore
+import docker.auth  # type: ignore
+import docker.errors  # type: ignore
+from docker.constants import DEFAULT_UNIX_SOCKET  # type: ignore
+from docker.models.images import Image  # type: ignore
+from docker.tls import TLSConfig  # type: ignore
 
 from urllib3.util import Url
 
