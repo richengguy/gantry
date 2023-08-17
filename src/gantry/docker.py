@@ -186,8 +186,6 @@ class Docker:
         str
             the processed output from the Docker client, as a blocking generator
         '''
-        # The JSON object that gets returned by the server is documented in
-        # https://github.com/moby/moby/blob/master/pkg/jsonmessage/jsonmessage.go#L145
         _logger.debug('Pushing %s to registry.', name)
         resp = self._client.images.push(name, stream=True, decode=True)
         for item in resp:
