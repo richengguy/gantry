@@ -1,6 +1,6 @@
 from typing import NamedTuple
 
-from ._common import CopyServiceResources, Pipeline, Target
+from ._common import CopyServiceResources, CreateBuildFolder, Pipeline, Target
 
 from .. import routers
 from .._compose_spec import ComposeService
@@ -154,19 +154,6 @@ class BuildRouterConfig:
         _logger.debug('Built router config to \'%s\'', config_file)
 
 
-class CreateBuildFolder:
-    def __init__(self, build_folder: Path, overwrite: bool) -> None:
-        self._build_folder = build_folder
-        self._overwrite = overwrite
-
-    def run(self, service_group: ServiceGroupDefinition) -> None:
-        if self._overwrite:
-            _logger.debug('Overwriting existing Compose configuration.')
-
-        output = self._build_folder / service_group.name
-        output.mkdir(parents=True, exist_ok=self._overwrite)
-
-
 class GenerateManifestFile:
     def __init__(self, build_folder: Path) -> None:
         self._build_folder = build_folder
@@ -186,13 +173,12 @@ class ComposeTarget(Target):
     def __init__(self, output: PathLike, overwrite: bool = False) -> None:
         super().__init__()
         self._output = Path(output)
-        self._overwrite = overwrite
 
-        if self._output.exists() and not self._overwrite:
+        if self._output.exists() and not overwrite:
             raise ComposeServiceBuildError(f'Cannot build services; {output} already exists.')
 
         self._pipeline = Pipeline(stages=[
-            CreateBuildFolder(self._output, self._overwrite),
+            CreateBuildFolder(self._output, overwrite=overwrite, use_group_name=True),
             BuildComposeFile(self._output),
             BuildRouterConfig(self._output),
             CopyServiceResources(self._output, use_group_name=True),
