@@ -46,7 +46,8 @@ def test_schema_list():
     assert result.exit_code == 0
 
     schemas = result.output.splitlines()
-    assert len(schemas) == 3
-    assert schemas[0] == Schema.CONFIG.value
-    assert schemas[1] == Schema.SERVICE.value
-    assert schemas[2] == Schema.SERVICE_GROUP.value
+    assert len(schemas) == 4
+    assert schemas[0] == Schema.BUILD_MANIFEST.value
+    assert schemas[1] == Schema.CONFIG.value
+    assert schemas[2] == Schema.SERVICE.value
+    assert schemas[3] == Schema.SERVICE_GROUP.value

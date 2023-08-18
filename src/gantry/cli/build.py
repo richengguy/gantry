@@ -79,7 +79,7 @@ def cmd(options: ProgramOptions,
         skip_build: bool,
         output_path: Path,
         services_path: Path) -> None:
-    '''Build the container images for a service group.
+    '''Build the container images for a service group at PATH.
 
     A 'YYYYMMDD.###' tag will be automatically generated for the new image. This
     can be overriden with the "--tag" option.

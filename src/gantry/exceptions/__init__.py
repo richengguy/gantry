@@ -1,5 +1,11 @@
 from ._base import GantryException
 
+from .build_manifest import (
+    BuildManifestException,
+    BuildManifestBadFilePathError,
+    BuildManifestValidationError,
+)
+
 from .cli import CliException
 
 from .config import (

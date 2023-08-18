@@ -9,6 +9,7 @@ from jsonschema.exceptions import ValidationError
 
 class Schema(Enum):
     '''Enumeration of available schemas.'''
+    BUILD_MANIFEST = 'build_manifest'
     CONFIG = 'config'
     SERVICE = 'service'
     SERVICE_GROUP = 'service_group'

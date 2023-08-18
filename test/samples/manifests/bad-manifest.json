@@ -1,0 +1,17 @@
+{
+    "type": "gantry-manifest",
+    "contents": [
+        {
+            "type": "image",
+            "image": "repo.example.com/some-image:1234",
+            "source": "some-service/Dockerfile"
+        },
+        {
+            "image": "repo/other-image:1234",
+            "source": "other-service/Dockerfile"
+        },
+        {
+            "type": "docker-compose"
+        }
+    ]
+}

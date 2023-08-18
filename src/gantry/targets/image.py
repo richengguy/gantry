@@ -1,10 +1,9 @@
-import json
-import shutil
 from typing import Iterator
 
-from ._common import CopyServiceResources, Pipeline, Target
+from ._common import CopyServiceResources, CreateBuildFolder, Pipeline, Target
 
 from .._types import Path, PathLike
+from ..build_manifest import BuildManifest, ImageEntry
 from ..console import MultiActivityDisplay
 from ..docker import Docker
 from ..exceptions import ServiceImageBuildError
@@ -46,7 +45,9 @@ class BuildDockerImages:
         for service, reporter in service_builds:
             # Generate the image name.
             name = service.name  # type: ignore
-            dockerfile_folder = (self._build_folder / name).absolute().as_posix()
+            dockerfile_folder = (
+                self._build_folder / service_group.name / name
+            ).absolute().as_posix()
             image_name = _create_image_name(self._namespace, self._tag, service)
 
             # Call the Docker API and record its output.
@@ -74,16 +75,14 @@ class GenerateManifestFile:
         self._tag = tag
 
     def run(self, service_group: ServiceGroupDefinition) -> None:
-        manifest: list[dict[str, str]] = []
-        for service in service_group:
-            manifest.append({
-                'image': _create_image_name(self._namespace, self._tag, service),
-                'service': service.name
-            })
-
-        manifest_json = self._build_folder / 'manifest.json'
-        with manifest_json.open('wt') as f:
-            json.dump(manifest, f, indent=2)
+        manifest = BuildManifest(entries=[
+            ImageEntry(_create_image_name(self._namespace, self._tag, service),
+                       Path(service_group.name) / service.name / 'Dockerfile')
+            for service in service_group
+        ])
+        manifest_file = self._build_folder / 'manifest.json'
+        manifest.save(manifest_file)
+        _logger.debug('Generated manifest at %s', manifest_file)
 
 
 class ImageTarget(Target):
@@ -109,9 +108,11 @@ class ImageTarget(Target):
         super().__init__()
         self._build_folder = Path(build_folder)
 
-        stages: list[Pipeline.Stage] = []
-        stages.append(CopyServiceResources(self._build_folder))
-        stages.append(GenerateManifestFile(self._build_folder, namespace, tag))
+        stages: list[Pipeline.Stage] = [
+            CreateBuildFolder(self._build_folder, overwrite=True, use_group_name=True),
+            CopyServiceResources(self._build_folder, use_group_name=True),
+            GenerateManifestFile(self._build_folder, namespace, tag),
+        ]
 
         if skip_build:
             _logger.info('Docker build stage will be skipped.')
@@ -122,10 +123,4 @@ class ImageTarget(Target):
 
     def build(self, service_group: ServiceGroupDefinition) -> None:
         _logger.debug('Building images for service group.')
-
-        if self._build_folder.exists():
-            _logger.debug('Removing existing build directory \'%s\'.', self._build_folder)
-            shutil.rmtree(self._build_folder)
-
-        self._build_folder.mkdir(parents=True)
         self._pipeline.run(service_group)

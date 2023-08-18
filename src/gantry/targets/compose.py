@@ -1,10 +1,11 @@
 from typing import NamedTuple
 
-from ._common import CopyServiceResources, Pipeline, Target
+from ._common import CopyServiceResources, CreateBuildFolder, Pipeline, Target
 
 from .. import routers
 from .._compose_spec import ComposeService
 from .._types import Path, PathLike
+from ..build_manifest import BuildManifest, DockerComposeEntry
 from ..exceptions import ComposeServiceBuildError
 from ..logging import get_app_logger
 from ..services import ServiceDefinition, ServiceGroupDefinition
@@ -87,18 +88,20 @@ def _convert_to_compose_service(service: ServiceDefinition,
 class BuildComposeFile:
     '''Pipeline stage to build a Docker Compose file from a service group definition.'''
 
-    def __init__(self, compose_file: Path) -> None:
+    def __init__(self, build_folder: Path) -> None:
         '''
         Parameters
         ----------
-        compose_file : path
-            path to where the compose file should be written to
+        build_folder : path
+            path to the top build folder
         '''
-        self._output = compose_file
+        self._build_folder = build_folder
 
     def run(self, service_group: ServiceGroupDefinition) -> None:
         if service_group.router.provider not in routers.PROVIDERS:
             raise ComposeServiceBuildError(f'Unknown routing provider `{service_group.router.provider}`.')  # noqa: E501
+
+        compose_file = self._build_folder / service_group.name / 'docker-compose.yml'
 
         router_args = service_group.router.args.copy()
         router_args['_config-file'] = service_group.router.config.path.name
@@ -125,9 +128,9 @@ class BuildComposeFile:
         }
 
         yaml = YamlSerializer()
-        yaml.to_file(compose_spec, self._output)
+        yaml.to_file(compose_spec, compose_file)
 
-        _logger.debug('Built compose file to \'%s\'', self._output)
+        _logger.debug('Built compose file to \'%s\'', compose_file)
 
 
 class BuildRouterConfig:
@@ -144,11 +147,25 @@ class BuildRouterConfig:
             }
         }
 
-        config_file = self._output / router.config.path.name
+        config_file = self._output / service_group.name / router.config.path.name
         with config_file.open('wt') as f:
             f.write(router.config.render(context))
 
         _logger.debug('Built router config to \'%s\'', config_file)
+
+
+class GenerateManifestFile:
+    def __init__(self, build_folder: Path) -> None:
+        self._build_folder = build_folder
+
+    def run(self, service_group: ServiceGroupDefinition) -> None:
+        compose_file = self._build_folder / service_group.name / 'docker-compose.yml'
+        manifest_json = self._build_folder / 'manifest.json'
+        manifest = BuildManifest(entries=[
+            DockerComposeEntry(compose_file.relative_to(self._build_folder), True)
+        ])
+        manifest.save(manifest_json)
+        _logger.debug('Generated manifest at %s', manifest_json)
 
 
 class ComposeTarget(Target):
@@ -156,21 +173,18 @@ class ComposeTarget(Target):
     def __init__(self, output: PathLike, overwrite: bool = False) -> None:
         super().__init__()
         self._output = Path(output)
-        self._overwrite = overwrite
 
-        if self._output.exists() and not self._overwrite:
+        if self._output.exists() and not overwrite:
             raise ComposeServiceBuildError(f'Cannot build services; {output} already exists.')
 
         self._pipeline = Pipeline(stages=[
-            BuildComposeFile(self._output / 'docker-compose.yml'),
+            CreateBuildFolder(self._output, overwrite=overwrite, use_group_name=True),
+            BuildComposeFile(self._output),
             BuildRouterConfig(self._output),
-            CopyServiceResources(self._output),
+            CopyServiceResources(self._output, use_group_name=True),
+            GenerateManifestFile(self._output),
         ])
 
     def build(self, service_group: ServiceGroupDefinition) -> None:
         _logger.debug('Converting service group to Docker Compose configuration.')
-        if self._overwrite:
-            _logger.debug('Overwriting existing Compose configuration.')
-
-        self._output.mkdir(parents=False, exist_ok=self._overwrite)
         self._pipeline.run(service_group)
