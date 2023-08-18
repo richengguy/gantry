@@ -103,7 +103,7 @@ class CreateBuildFolder:
 
     def run(self, service_group: ServiceGroupDefinition) -> None:
         if self._overwrite:
-            _logger.debug('Overwriting existing Compose configuration.')
+            _logger.debug('Overwriting existing build folder.')
 
         output = self._build_folder
         if self._use_group_name:
