@@ -22,7 +22,7 @@
                 "image": {
                     "title": "Image Name",
                     "description": "The complete image name, including any tags.",
-                    "pattern": "^(.*)/(.*):(.*)",
+                    "pattern": "^(.*):(.*)",
                     "type": "string"
                 },
                 "source": {
