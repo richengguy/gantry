@@ -1,9 +1,9 @@
-import json
 from pathlib import Path
 
 from click.testing import CliRunner
 
 from gantry import cli
+from gantry.build_manifest import BuildManifest
 
 
 def test_cannot_provide_both_tag_and_build_id(samples_folder: Path) -> None:
@@ -26,11 +26,12 @@ def test_manifest_generation(samples_folder: Path, tmp_path: Path) -> None:
         manifest_file = Path(td) / 'build' / 'services.dockerfiles' / 'manifest.json'
         assert manifest_file.exists()
 
-        with manifest_file.open('rt') as f:
-            manifest = json.load(f)
+        manifest = BuildManifest.load(manifest_file)
+        images = list(manifest.image_entries())
+        assert manifest.num_entries() == len(images)
 
-        assert manifest[0]['service'] == 'no-args'
-        assert manifest[0]['image'] == 'no-args:123'
+        assert images[0].image == 'no-args:123'
+        assert images[0].source == Path('build-args/no-args/Dockerfile')
 
-        assert manifest[1]['service'] == 'with-args'
-        assert manifest[1]['image'] == 'with-args:123'
+        assert images[1].image == 'with-args:123'
+        assert images[1].source == Path('build-args/with-args/Dockerfile')

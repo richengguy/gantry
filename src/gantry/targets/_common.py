@@ -90,6 +90,28 @@ class CopyServiceResources:
         copy_services_resources(service_group, folder)
 
 
+class CreateBuildFolder:
+    def __init__(
+        self, build_folder: Path,
+        *,
+        overwrite: bool = False,
+        use_group_name: bool = False
+    ) -> None:
+        self._build_folder = build_folder
+        self._overwrite = overwrite
+        self._use_group_name = use_group_name
+
+    def run(self, service_group: ServiceGroupDefinition) -> None:
+        if self._overwrite:
+            _logger.debug('Overwriting existing Compose configuration.')
+
+        output = self._build_folder
+        if self._use_group_name:
+            output /= service_group.name
+
+        output.mkdir(parents=True, exist_ok=self._overwrite)
+
+
 def copy_services_resources(service_group: ServiceGroupDefinition, folder: Path) -> None:
     '''Copy the service resources into the output folder.
 

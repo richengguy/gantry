@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, KW_ONLY
+from dataclasses import dataclass
 from enum import Enum
 import json
 from typing import Iterator, cast
@@ -39,7 +39,6 @@ class DockerComposeEntry(Entry):
     '''Path to the docker-compose.yml file.'''
     is_deployable: bool
     '''Indicate if the compose file, and it's parent folder, are deployable.'''
-    _ = KW_ONLY
 
     def __post_init__(self) -> None:
         if self.compose_file.name != 'docker-compose.yml':
@@ -94,14 +93,23 @@ class ImageEntry(Entry):
 
 class BuildManifest:
     '''Defines the contents of a gantry build.'''
-    def __init__(self, *, entries: list[Entry] | None = None) -> None:
+    def __init__(self, *, entries: list[Entry] | None = None, source: Path | None = None) -> None:
         '''
         Parameters
         ----------
         entries : list of :class:`Entry`
             the entries to use in the manifest; defaults to an empty list
+        source : path, optional
+            path to the original JSON file; should be left unset when creating
+            a new manifest
         '''
         self._entries: list[Entry] = entries if entries is not None else []
+        self._source = source
+
+    @property
+    def is_resolved(self) -> bool:
+        '''bool: Does the object have an associated JSON file?'''
+        return self._source is not None
 
     def append_entry(self, entry: Entry) -> None:
         '''Add an entry to the end of the manifest.
@@ -141,6 +149,32 @@ class BuildManifest:
         '''The number of entries in the manifest.'''
         return len(self._entries)
 
+    def resolve(self, resource: Path) -> Path:
+        '''Resolve a resource path from a manifest entry.
+
+        Parameters
+        ----------
+        resource : Path
+            a resource path from within the manifest
+
+        Returns
+        -------
+        Path
+            the full resolved path
+
+        Raises
+        ------
+        ValueError
+            if the manifest itself is in-memory; use :attr:`is_resolved` to see
+            if the manifest has an associated file path
+        '''
+        if self._source is None:
+            raise ValueError(
+                'Manifest needs to be saved or loaded from a file before resolve() is called.'
+            )
+
+        return (self._source.parent / resource).resolve()
+
     def save(self, path: PathLike) -> None:
         '''Save the manifest to a file.
 
@@ -157,6 +191,8 @@ class BuildManifest:
         path = Path(path)
         with path.open('wt') as f:
             json.dump(manifest, f, indent=4)
+
+        self._source = path
 
     @staticmethod
     def load(path: PathLike) -> 'BuildManifest':
@@ -185,7 +221,7 @@ class BuildManifest:
         if len(errors) != 0:
             raise BuildManifestValidationError(errors)
 
-        manifest = BuildManifest()
+        manifest = BuildManifest(source=path)
         item: dict
         for item in parsed['contents']:
             match item['type']:

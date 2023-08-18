@@ -1,4 +1,4 @@
-name: traefik-default
+name: traefik-custom-config
 network: test
 router:
   provider: traefik
