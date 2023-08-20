@@ -90,6 +90,9 @@ class Target(ABC):
                 case _:
                     raise GantryException('Target option must be a string or a "key=value" format.')
 
+            if len(key) == 0:
+                raise GantryException('Target option cannot be an empty string.')
+
             if key not in accepted_options:
                 raise GantryException(f'Target does not support a "{key}" option.')
 
