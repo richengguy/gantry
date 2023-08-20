@@ -10,7 +10,7 @@ def test_cannot_provide_both_tag_and_build_id(samples_folder: Path) -> None:
     path = samples_folder / 'service-definition' / 'build-args'
 
     runner = CliRunner()
-    result = runner.invoke(cli.main, ['build', '-t', '1', '-n', '1', str(path)])
+    result = runner.invoke(cli.main, ['build', '-t', '1', '-n', '1', 'image', str(path)])
     assert result.exit_code != 0
     assert 'Cannot specify both "--tag" and "--build-number".' in result.stdout
 
@@ -20,10 +20,11 @@ def test_manifest_generation(samples_folder: Path, tmp_path: Path) -> None:
 
     runner = CliRunner()
     with runner.isolated_filesystem(temp_dir=tmp_path) as td:
-        result = runner.invoke(cli.main, ['build', '--tag', '123', '--skip-build', str(path)])
+        result = runner.invoke(cli.main,
+                               ['build', '--tag', '123', '-X', 'skip-build', 'image', str(path)])
         assert result.exit_code == 0
 
-        manifest_file = Path(td) / 'build' / 'services.dockerfiles' / 'manifest.json'
+        manifest_file = Path(td) / 'build' / 'services.image' / 'manifest.json'
         assert manifest_file.exists()
 
         manifest = BuildManifest.load(manifest_file)

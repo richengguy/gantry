@@ -92,7 +92,8 @@ class ImageTarget(Target):
                  tag: str,
                  build_folder: PathLike,
                  *,
-                 skip_build: bool = False) -> None:
+                 options: list[str] | None = None
+                 ) -> None:
         '''
         Parameters
         ----------
@@ -102,14 +103,20 @@ class ImageTarget(Target):
             the image tag; often this will be the build verison
         build_folder : path-like
             path to the build folder when building the images
-        skip_build : bool
-            if ``True``, don't perform the Docker build
+        options : list of str, optional
+            optional arguments to pass into the build target
         '''
-        super().__init__()
+        super().__init__(options=options)
         self._build_folder = Path(build_folder)
 
+        overwrite = 'overwrite' in self._parsed_options
+        skip_build = 'skip-build' in self._parsed_options
+
+        if self._build_folder.exists() and not overwrite:
+            raise ServiceImageBuildError(f'Cannot build services; {build_folder} already exists.')
+
         stages: list[Pipeline.Stage] = [
-            CreateBuildFolder(self._build_folder, overwrite=True, use_group_name=True),
+            CreateBuildFolder(self._build_folder, overwrite=overwrite, use_group_name=True),
             CopyServiceResources(self._build_folder, use_group_name=True),
             GenerateManifestFile(self._build_folder, namespace, tag),
         ]
@@ -124,3 +131,27 @@ class ImageTarget(Target):
     def build(self, service_group: ServiceGroupDefinition) -> None:
         _logger.debug('Building images for service group.')
         self._pipeline.run(service_group)
+
+    @staticmethod
+    def description() -> str:
+        return 'Build Docker images for each service in the service group.'
+
+    @staticmethod
+    def options() -> list[tuple[str, str]]:
+        return [
+            (
+                'overwrite',
+                (
+                    'Overwrite the contents of the build folder before calling '
+                    '`docker build`.  The default behaviour is to prevent '
+                    'writing over any existing files in the build directory.'
+                )
+            ),
+            (
+                'skip-build',
+                (
+                    'Skip the actual `docker build` stage.  This will copy all '
+                    'of the files needed for the build.'
+                )
+            )
+        ]

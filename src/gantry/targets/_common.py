@@ -4,6 +4,7 @@ import shutil
 
 from .. import routers
 from .._types import Path
+from ..exceptions import GantryException
 from ..logging import get_app_logger
 from ..services import ServiceGroupDefinition
 
@@ -65,9 +66,51 @@ class Pipeline:
 
 class Target(ABC):
     '''Defines a build target for a service group.'''
+
+    def __init__(self, *, options: list[str] | None = None) -> None:
+        super().__init__()
+        self._parsed_options: dict[str, str] = {}
+
+        if options is None:
+            return
+
+        accepted_options = [name for name, _ in self.options()]
+        for opt in options:
+            parts = opt.split('=')
+
+            key = ''
+            value = ''
+
+            match len(parts):
+                case 1:
+                    key = parts[0]
+                case 2:
+                    key = parts[0]
+                    value = parts[1]
+                case _:
+                    raise GantryException('Target option must be a string or a "key=value" format.')
+
+            if len(key) == 0:
+                raise GantryException('Target option cannot be an empty string.')
+
+            if key not in accepted_options:
+                raise GantryException(f'Target does not support a "{key}" option.')
+
+            self._parsed_options[key] = value
+
     @abstractmethod
     def build(self, service_group: ServiceGroupDefinition) -> None:
         '''Build the service group.'''
+
+    @staticmethod
+    @abstractmethod
+    def description() -> str:
+        '''Provide a short description about the target.'''
+
+    @staticmethod
+    @abstractmethod
+    def options() -> list[tuple[str, str]]:
+        '''Returns a list of options that the target can accept.'''
 
 
 class CopyServiceResources:
