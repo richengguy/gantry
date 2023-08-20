@@ -88,7 +88,7 @@ class Target(ABC):
                     key = parts[0]
                     value = parts[1]
                 case _:
-                    raise GantryException('Target option must be a string or a "key=value" fromat.')
+                    raise GantryException('Target option must be a string or a "key=value" format.')
 
             if key not in accepted_options:
                 raise GantryException(f'Target does not support a "{key}" option.')
