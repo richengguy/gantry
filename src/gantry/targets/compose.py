@@ -170,9 +170,11 @@ class GenerateManifestFile:
 
 class ComposeTarget(Target):
     '''Convert a service group into a Docker Compose file.'''
-    def __init__(self, output: PathLike, overwrite: bool = False) -> None:
-        super().__init__()
+    def __init__(self, output: PathLike, *, options: list[str] | None = None) -> None:
+        super().__init__(options=options)
         self._output = Path(output)
+
+        overwrite = 'overwrite' in self._parsed_options
 
         if self._output.exists() and not overwrite:
             raise ComposeServiceBuildError(f'Cannot build services; {output} already exists.')
@@ -188,3 +190,21 @@ class ComposeTarget(Target):
     def build(self, service_group: ServiceGroupDefinition) -> None:
         _logger.debug('Converting service group to Docker Compose configuration.')
         self._pipeline.run(service_group)
+
+    @staticmethod
+    def description() -> str:
+        return 'Convert a service group into a Docker Compose configuration.'
+
+    @staticmethod
+    def options() -> list[tuple[str, str]]:
+        return [
+            (
+                'overwrite',
+                (
+                    'Overwrite an existing Docker Composer configuration '
+                    'located at the build folder.  The default behaviour is to '
+                    'avoid writing over any existing files in the build '
+                    'directory.'
+                )
+            )
+        ]
