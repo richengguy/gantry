@@ -111,6 +111,31 @@ class ForgeClient(ABC):
             _logger.debug('Logging into container registry at %s', self.endpoint)
             client.login(self.endpoint, username, password)
 
+    def clone_repo(self, name: str) -> None:
+        '''Clone a repo from the forge.
+
+        The repo is expected to be located in the organization specified in the
+        gantry configuration file.
+
+        Parameters
+        ----------
+        name : str
+            repo name
+        '''
+
+    @abstractmethod
+    def create_repo(self, name: str) -> None:
+        '''Create a repo on the forge.
+
+        The repo will be created in the organization specified in the gantry
+        configuration file.  The repo will be ``<org>/<name>`` on the forge.
+
+        Parameters
+        ----------
+        name : str
+            repo name
+        '''
+
     @abstractmethod
     def get_server_version(self) -> str:
         '''Get the version of the forge service the client is connected to.
@@ -128,6 +153,16 @@ class ForgeClient(ABC):
         ------
         :class:`ForgeApiOperationFailed`
             if the client failed to get the server version
+        '''
+
+    @abstractmethod
+    def list_repos(self) -> list[str]:
+        '''List the repos associated with the currently authenticated account.
+
+        Returns
+        -------
+        list of str
+            list of repo names
         '''
 
     def push_image(self, name: str, *,
