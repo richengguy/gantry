@@ -52,7 +52,7 @@ class ForgeClient(ABC):
     with a software forge, such as authentication and pushing up container
     images.
     '''
-    def __init__(self, app_folder: Path, url: str) -> None:
+    def __init__(self, app_folder: Path, url: str, owner: str) -> None:
         '''
         Parameters
         ----------
@@ -60,12 +60,13 @@ class ForgeClient(ABC):
             gantry's working folder
         url : str
             service API URL
-        cert : path, optional
-            path to a custom root cert if the forge does not use a public cert
+        owner : str
+            name of the account/organization the client interacts with
         '''
         provider_folder = app_folder / self.provider_name()
         self._auth_file = provider_folder / 'auth.json'
         self._docker_config = provider_folder / 'docker.json'
+        self._owner = owner
 
         try:
             self._url = parse_url(url)

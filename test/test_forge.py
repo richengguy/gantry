@@ -16,14 +16,21 @@ from urllib3.util import Url, parse_url
 
 class MockForge(ForgeClient):
     def __init__(self, app_folder: Path, *, url: str = 'https://localhost') -> None:
-        super().__init__(app_folder, url)
+        super().__init__(app_folder, url, 'mock_account')
+        assert self._owner == 'mock_account'
 
     @property
     def endpoint(self) -> Url:
         return parse_url(urljoin(self._url.url, '/api/v1/mock'))
 
+    def create_repo(self, name: str) -> None:
+        ...
+
     def get_server_version(self) -> str:
         return 'n/a'
+
+    def list_repos(self) -> list[str]:
+        return ['a repo']
 
     @staticmethod
     def provider_name() -> str:
