@@ -20,7 +20,7 @@ class MockForge(ForgeClient):
         assert self._owner == 'mock_account'
 
     @property
-    def endpoint(self) -> Url:
+    def api_base_url(self) -> Url:
         return parse_url(urljoin(self._url.url, '/api/v1/mock'))
 
     def create_repo(self, name: str) -> None:
@@ -68,7 +68,7 @@ def test_create_new_forge(tmp_path: Path) -> None:
 
 def test_correct_endpoint(tmp_path: Path) -> None:
     mock = MockForge(tmp_path, url='https://example.com')
-    assert mock.endpoint.url == 'https://example.com/api/v1/mock'
+    assert mock.api_base_url.url == 'https://example.com/api/v1/mock'
 
 
 def test_load_existing_auth_info(tmp_path: Path) -> None:

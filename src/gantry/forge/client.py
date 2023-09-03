@@ -1,12 +1,15 @@
 from abc import ABC, abstractmethod
 from enum import StrEnum
 import json
-from typing import Callable, TypedDict, NotRequired
+from typing import Callable, Literal, TypedDict, NotRequired
 
 import certifi
 
+from urllib.parse import urljoin
+
 from urllib3 import PoolManager
 import urllib3.exceptions
+from urllib3.response import BaseHTTPResponse
 from urllib3.util import Url, parse_url
 
 from .. import __version__
@@ -22,6 +25,8 @@ from ..logging import get_app_logger
 
 
 _logger = get_app_logger('forge')
+
+HttpMethod = Literal['GET', 'DELETE', 'PATCH', 'POST', 'PUT']
 
 
 class AuthType(StrEnum):
@@ -65,7 +70,6 @@ class ForgeClient(ABC):
         '''
         provider_folder = app_folder / self.provider_name()
         self._auth_file = provider_folder / 'auth.json'
-        self._docker_config = provider_folder / 'docker.json'
         self._owner = owner
 
         try:
@@ -109,8 +113,8 @@ class ForgeClient(ABC):
                 )
 
         with Docker(ca_certs=self._ca_certs) as client:
-            _logger.debug('Logging into container registry at %s', self.endpoint)
-            client.login(self.endpoint, username, password)
+            _logger.debug('Logging into container registry at %s', self.url)
+            client.login(self.url, username, password)
 
     def clone_repo(self, name: str) -> None:
         '''Clone a repo from the forge.
@@ -205,6 +209,65 @@ class ForgeClient(ABC):
                 for resp in client.push_image_streaming(full_name):
                     status_fn(resp)
 
+    def send_http_request(self,
+                          method: HttpMethod,
+                          target: str,
+                          body: str | None = None,
+                          *,
+                          success: set[int] = set([200])
+                          ) -> BaseHTTPResponse:
+        '''Send an HTTP request to the forge.
+
+        This is a low-level method used to send requests to a remote forge.  It
+        performs some exception handling to ensure that the request went through
+        correctly.  If verification passes then the HTTP response object is
+        returned.
+
+        The provided endpoint is will be joined with the URL provided when the
+        client is first initialized.  The caller will responsible for verifying
+        the endpoint, and the request body, are constructed correctly.
+
+        Parameters
+        ----------
+        method : str
+            a string containing the HTTP request type, e.g., 'GET'
+        endpoint : str
+            the endpoint the request is being sent to
+        body : str, optional
+            the optional string-encoded HTTP request body
+        success : set of ints
+            the set of expected HTTP status codes indicating a successful
+            operation, defaults to ``{200}``
+
+        Returns
+        -------
+        :class:`BaseHTTPResponse`
+            the HTTP response instance
+
+        Raises
+        ------
+        :exc:`ForgeApiOperationFailed`
+            if the HTTP request failed
+        '''
+        endpoint = urljoin(self.api_base_url, target)
+        url = urljoin(self._url.url, endpoint)
+        try:
+            _logger.debug('Making %s request to %s', method, url)
+            resp = self._http.request(method, url, headers=self._headers, body=body)
+        except urllib3.exceptions.RequestError as exc:
+            raise ForgeApiOperationFailed(
+                self.provider_name(),
+                'Initial HTTP request failed.'
+            ) from exc
+
+        if resp.status not in success:
+            raise ForgeApiOperationFailed(
+                self.provider_name(),
+                f'Operation failed with {resp.status}.'
+            )
+
+        return resp
+
     def set_basic_auth(self, *, user: str, passwd: str) -> None:
         '''Set the client to connect using HTTP basic authentication.
 
@@ -245,8 +308,18 @@ class ForgeClient(ABC):
 
     @property
     @abstractmethod
-    def endpoint(self) -> Url:
-        '''Url: The API endpoint for this client.'''
+    def api_base_url(self) -> str:
+        '''str: The base URL for the forge's API.'''
+
+    @property
+    def owner_account(self) -> str:
+        '''str: The account the client interacts with.'''
+        return self._owner
+
+    @property
+    def url(self) -> Url:
+        '''Url: The URL of the software forge.'''
+        return self._url
 
     @staticmethod
     @abstractmethod
