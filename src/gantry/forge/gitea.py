@@ -1,7 +1,4 @@
-from urllib.parse import urljoin
-
-from urllib3.exceptions import RequestError
-from urllib3.util import Url, parse_url
+from typing import cast, TypedDict
 
 from .client import ForgeClient
 from .._types import Path
@@ -12,37 +9,50 @@ from ..logging import get_app_logger
 _logger = get_app_logger('gitea')
 
 
+class _User(TypedDict):
+    full_name: str
+    login: str
+
+
+class _Repository(TypedDict):
+    id: int
+    owner: _User
+    name: str
+    full_name: str
+    clone_url: str
+    html_url: str
+    ssh_url: str
+
+
 class GiteaClient(ForgeClient):
     '''Push service images and definitions to a Gitea repo.'''
     API_BASE_URL = '/api/v1/'
 
-    def __init__(self, app_folder: Path, url: str) -> None:
-        super().__init__(app_folder, url)
-        self._endpoint = urljoin(url, GiteaClient.API_BASE_URL)
+    def __init__(self, app_folder: Path, url: str, owner: str) -> None:
+        super().__init__(app_folder, url, owner)
 
     @property
-    def endpoint(self) -> Url:
-        return parse_url(self._endpoint)
+    def api_base_url(self) -> str:
+        return self.API_BASE_URL
+
+    def create_repo(self, name: str) -> None:
+        ...
 
     def get_server_version(self) -> str:
-        try:
-            _logger.debug('Requesting version from \'%s\'.', self._version_endpoint)
-            resp = self._http.request('GET', self._version_endpoint, headers=self._headers)
-        except RequestError as e:
-            _logger.exception('HTTP request failed.', exc_info=e)
-            raise ForgeApiOperationFailed(
-                self.provider_name(),
-                'Initial HTTP request failed.'
-            ) from e
-
-        if resp.status != 200:
-            _logger.error('Version request failed with %d.', resp.status)
-            raise ForgeApiOperationFailed(
-                self.provider_name(),
-                f'Operation failed with {resp.status}.'
-            )
-
+        resp = self.send_http_request('GET', self._version_endpoint)
         return resp.json()['version']
+
+    def list_repos(self) -> list[str]:
+        repo = self.send_http_request('GET', self._org_repos_endpoint)
+        contents = repo.json()
+
+        if not isinstance(contents, list):
+            raise ForgeApiOperationFailed(self.provider_name(), 'Expected a list of JSON objects.')
+
+        repos = cast(list[_Repository], contents)
+        _logger.debug('Found %d repos in the \'%s\' account.', len(repos), self.owner_account)
+
+        return [repo['name'] for repo in repos]
 
     @staticmethod
     def provider_name() -> str:
@@ -50,4 +60,8 @@ class GiteaClient(ForgeClient):
 
     @property
     def _version_endpoint(self) -> str:
-        return urljoin(self._endpoint, 'version')
+        return 'version'
+
+    @property
+    def _org_repos_endpoint(self) -> str:
+        return f'orgs/{self.owner_account}/repos'
