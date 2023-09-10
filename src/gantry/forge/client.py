@@ -116,6 +116,7 @@ class ForgeClient(ABC):
             _logger.debug('Logging into container registry at %s', self.url)
             client.login(self.url, username, password)
 
+    @abstractmethod
     def clone_repo(self, name: str) -> None:
         '''Clone a repo from the forge.
 
@@ -129,7 +130,7 @@ class ForgeClient(ABC):
         '''
 
     @abstractmethod
-    def create_repo(self, name: str) -> None:
+    def create_repo(self, name: str, desc: str | None = None) -> None:
         '''Create a repo on the forge.
 
         The repo will be created in the organization specified in the gantry
@@ -139,6 +140,9 @@ class ForgeClient(ABC):
         ----------
         name : str
             repo name
+        desc : str, optional
+            optionally set the repo's description; this will only be applied if
+            the forge supports it
         '''
 
     @abstractmethod
