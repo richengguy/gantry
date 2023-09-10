@@ -1,3 +1,5 @@
+from dataclasses import asdict, dataclass
+import json
 from typing import cast, TypedDict
 
 from .client import ForgeClient
@@ -24,6 +26,15 @@ class _Repository(TypedDict):
     ssh_url: str
 
 
+@dataclass
+class _CreateRepoRequest:
+    name: str
+    description: str
+
+    auto_init: bool = True
+    default_branch: str = 'main'
+
+
 class GiteaClient(ForgeClient):
     '''Push service images and definitions to a Gitea repo.'''
     API_BASE_URL = '/api/v1/'
@@ -36,7 +47,22 @@ class GiteaClient(ForgeClient):
         return self.API_BASE_URL
 
     def create_repo(self, name: str) -> None:
-        ...
+        req = _CreateRepoRequest(name, 'Gantry-managed Repo')
+        _logger.debug('Request body: %s', asdict(req))
+
+        resp = self.send_http_request('POST',
+                                      self._org_repos_endpoint,
+                                      json=asdict(req),
+                                      success=set([201, 400]))
+
+        if resp.status == 400:
+            contents = resp.json()
+            _logger.error('URL: %s', contents['url'])
+            _logger.error('Message: %s', contents['message'])
+            raise ForgeApiOperationFailed(self.provider_name(), 'Request failed; see debug log.')
+
+        repos = cast(_Repository, resp.json())
+        _logger.debug('New repository created at %s.', repos['clone_url'])
 
     def get_server_version(self) -> str:
         resp = self.send_http_request('GET', self._version_endpoint)

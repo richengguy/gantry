@@ -213,6 +213,16 @@ def cmd_push(opts: ProgramOptions, dry_run: bool, manifest_path: Path) -> None:
         raise CliException('Push failed...run with \'gantry -d\' to see traceback.')
 
 
+@cmd.command('create-repo')
+@click.argument('name')
+@click.pass_obj
+def cmd_create_repo(opts: ProgramOptions, name: str) -> None:
+    '''List all current service repos on the software forge.'''
+    config = _check_config(opts)
+    client = make_client(config, opts.app_folder)
+    client.create_repo(name)
+
+
 @cmd.command('service-repos')
 @click.pass_obj
 def cmd_list_service_repos(opts: ProgramOptions) -> None:

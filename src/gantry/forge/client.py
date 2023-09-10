@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from enum import StrEnum
 import json
-from typing import Callable, Literal, TypedDict, NotRequired
+from typing import Any, Callable, Literal, TypedDict, NotRequired
 
 import certifi
 
@@ -212,8 +212,9 @@ class ForgeClient(ABC):
     def send_http_request(self,
                           method: HttpMethod,
                           target: str,
-                          body: str | None = None,
                           *,
+                          body: str | None = None,
+                          json: Any | None = None,
                           success: set[int] = set([200])
                           ) -> BaseHTTPResponse:
         '''Send an HTTP request to the forge.
@@ -235,6 +236,8 @@ class ForgeClient(ABC):
             the endpoint the request is being sent to
         body : str, optional
             the optional string-encoded HTTP request body
+        json : object, optional
+            an optional object to encode as a JSON object
         success : set of ints
             the set of expected HTTP status codes indicating a successful
             operation, defaults to ``{200}``
@@ -253,7 +256,7 @@ class ForgeClient(ABC):
         url = urljoin(self._url.url, endpoint)
         try:
             _logger.debug('Making %s request to %s', method, url)
-            resp = self._http.request(method, url, headers=self._headers, body=body)
+            resp = self._http.request(method, url, headers=self._headers, body=body, json=json)
         except urllib3.exceptions.RequestError as exc:
             raise ForgeApiOperationFailed(
                 self.provider_name(),
