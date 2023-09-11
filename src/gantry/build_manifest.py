@@ -13,6 +13,9 @@ from .exceptions import (
 from .schemas import Schema, validate_object
 
 
+MANIFEST_TYPE = 'gantry-manifest'
+
+
 class EntryType(str, Enum):
     '''The type of entry within a build manifest.'''
     DOCKER_COMPOSE = 'docker-compose'
@@ -184,7 +187,7 @@ class BuildManifest:
             location to save the manifest
         '''
         manifest = {
-            'type': 'gantry-manifest',
+            'type': MANIFEST_TYPE,
             'contents': [entry.to_dict() for entry in self._entries]
         }
 

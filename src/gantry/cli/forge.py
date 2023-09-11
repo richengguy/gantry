@@ -260,4 +260,7 @@ def cmd_repos_list(opts: ProgramOptions) -> None:
     '''List all repos in the service account.'''
     config = _check_config(opts)
     client = make_client(config, opts.app_folder)
-    print(client.list_repos())
+
+    console = Console()
+    for repo in client.list_repos():
+        console.print(f'{repo} - {client.check_managed_repo(repo)}')

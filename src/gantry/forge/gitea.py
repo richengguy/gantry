@@ -1,28 +1,46 @@
+from base64 import b64decode
 from dataclasses import asdict, dataclass
-from typing import cast, TypedDict
+import json
+from typing import cast, Literal, TypedDict
 
 from .client import ForgeClient
 from .._types import Path
+from ..build_manifest import MANIFEST_TYPE
 from ..exceptions import ForgeApiOperationFailed
 from ..logging import get_app_logger
+from ..targets import MANIFEST_FILE
 
 
 _logger = get_app_logger('gitea')
 
 
-class _User(TypedDict):
-    full_name: str
-    login: str
+class _Contents(TypedDict):
+    content: str | None
+    download_url: str   # direct file download URL
+    encoding: str | None
+    git_url: str    # accesses the git 'blob' object
+    html_url: str   # user/browser-friendly URL
+    name: str
+    path: str
+    size: int
+    target: Literal['symlink'] | None
+    type: Literal['file', 'dir', 'symlink', 'submodule']
+    url: str    # API access URL
 
 
 class _Repository(TypedDict):
     id: int
-    owner: _User
+    owner: '_User'
     name: str
     full_name: str
     clone_url: str
     html_url: str
     ssh_url: str
+
+
+class _User(TypedDict):
+    full_name: str
+    login: str
 
 
 @dataclass
@@ -63,6 +81,44 @@ class GiteaClient(ForgeClient):
     @property
     def api_base_url(self) -> str:
         return self.API_BASE_URL
+
+    def check_managed_repo(self, name: str) -> bool:
+        # First, request the contents of particular repo.
+        resp = self.send_http_request('GET', self._repos_endpoint(name, contents=True))
+
+        contents = resp.json()
+        if not isinstance(contents, list):
+            raise ForgeApiOperationFailed(self.provider_name(), 'Expected a list of JSON objects.')
+
+        contents = cast(list[_Contents], contents)
+
+        # Now, check if there's a top-level manifest file.
+        manifest: _Contents | None = None
+        for item in contents:
+            if item['path'] == MANIFEST_FILE:
+                manifest = item
+                break
+
+        if manifest is None:
+            _logger.debug('\'%s/%s\' has no %s file in the top-level folder.',
+                          self.owner_account,
+                          name,
+                          MANIFEST_FILE)
+            return False
+
+        # If there is one, then see if it's a gantry manifest as opposed to
+        # another identically-named JSON file.  This requires requesting the
+        # manifest file object again so that we also get the (base64-encoded)
+        # contents.
+        _logger.debug('Found %s, checking if gantry manifest.', MANIFEST_FILE)
+        resp = self.send_http_request('GET', manifest['url'])
+        manifest = cast(_Contents, resp.json())
+
+        if content := manifest['content']:
+            manifest_json: dict = json.loads(b64decode(content))
+            return manifest_json.get('type') == MANIFEST_TYPE
+        else:
+            return False
 
     def clone_repo(self, name: str) -> None:
         ...
@@ -130,8 +186,13 @@ class GiteaClient(ForgeClient):
     def _org_repos_endpoint(self) -> str:
         return f'orgs/{self.owner_account}/repos'
 
-    def _repos_endpoint(self, name: str) -> str:
-        return f'repos/{self.owner_account}/{name}'
+    def _repos_endpoint(self, name: str, *, contents: bool = False) -> str:
+        url = f'repos/{self.owner_account}/{name}'
+
+        if contents:
+            url = f'{url}/contents'
+
+        return url
 
     @property
     def _version_endpoint(self) -> str:

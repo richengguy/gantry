@@ -117,6 +117,25 @@ class ForgeClient(ABC):
             client.login(self.url, username, password)
 
     @abstractmethod
+    def check_managed_repo(self, name: str) -> bool:
+        '''Determine if a repo is a gantry-managed repo.
+
+        A gantry-managed repo is one that contains a build manifest at its root.
+        These files are automatically generated when ganty builds a service
+        group for deployment.
+
+        Parameters
+        ----------
+        name : str
+            the repo name
+
+        Returns
+        -------
+        bool
+            if the repo is gantry-managed
+        '''
+
+    @abstractmethod
     def clone_repo(self, name: str) -> None:
         '''Clone a repo from the forge.
 
