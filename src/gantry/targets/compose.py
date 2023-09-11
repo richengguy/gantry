@@ -1,6 +1,6 @@
 from typing import NamedTuple
 
-from ._common import CopyServiceResources, CreateBuildFolder, Pipeline, Target
+from ._common import CopyServiceResources, CreateBuildFolder, Pipeline, Target, MANIFEST_FILE
 
 from .. import routers
 from .._compose_spec import ComposeService
@@ -160,7 +160,7 @@ class GenerateManifestFile:
 
     def run(self, service_group: ServiceGroupDefinition) -> None:
         compose_file = self._build_folder / service_group.name / 'docker-compose.yml'
-        manifest_json = self._build_folder / 'manifest.json'
+        manifest_json = self._build_folder / MANIFEST_FILE
         manifest = BuildManifest(entries=[
             DockerComposeEntry(compose_file.relative_to(self._build_folder), True)
         ])

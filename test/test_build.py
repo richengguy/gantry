@@ -4,6 +4,7 @@ from click.testing import CliRunner
 
 from gantry import cli
 from gantry.build_manifest import BuildManifest
+from gantry.targets import MANIFEST_FILE
 
 
 def test_cannot_provide_both_tag_and_build_id(samples_folder: Path) -> None:
@@ -24,7 +25,7 @@ def test_manifest_generation(samples_folder: Path, tmp_path: Path) -> None:
                                ['build', '--tag', '123', '-X', 'skip-build', 'image', str(path)])
         assert result.exit_code == 0
 
-        manifest_file = Path(td) / 'build' / 'services.image' / 'manifest.json'
+        manifest_file = Path(td) / 'build' / 'services.image' / MANIFEST_FILE
         assert manifest_file.exists()
 
         manifest = BuildManifest.load(manifest_file)

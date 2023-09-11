@@ -12,6 +12,9 @@ from ..services import ServiceGroupDefinition
 _logger = get_app_logger('generic-target')
 
 
+MANIFEST_FILE = 'manifest.json'
+
+
 class Pipeline:
     '''A pipeline for processing service groups.'''
 

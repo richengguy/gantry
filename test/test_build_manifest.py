@@ -5,6 +5,7 @@ import pytest
 
 from gantry.build_manifest import BuildManifest, DockerComposeEntry, ImageEntry
 from gantry.exceptions import BuildManifestValidationError
+from gantry.targets import MANIFEST_FILE
 
 
 def test_create_manifest(tmp_path: Path) -> None:
@@ -12,7 +13,7 @@ def test_create_manifest(tmp_path: Path) -> None:
     manifest.append_entry(DockerComposeEntry(Path('./folder/docker-compose.yml'), False))
     manifest.append_entry(ImageEntry('repo/image:1234', Path('./folder/Dockerfile')))
 
-    manifest_json = tmp_path / 'manifest.json'
+    manifest_json = tmp_path / MANIFEST_FILE
     manifest.save(manifest_json)
 
     with manifest_json.open('rt') as f:
@@ -55,7 +56,7 @@ def test_roundtrip_manifest(tmp_path: Path) -> None:
     ])
 
     # Serialize
-    json_file = tmp_path / 'manifest.json'
+    json_file = tmp_path / MANIFEST_FILE
     manifest.save(json_file)
 
     # Deserialize

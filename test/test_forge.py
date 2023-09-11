@@ -23,6 +23,9 @@ class MockForge(ForgeClient):
     def api_base_url(self) -> Url:
         return parse_url(urljoin(self._url.url, '/api/v1/mock'))
 
+    def check_managed_repo(self, name: str) -> bool:
+        return True
+
     def clone_repo(self, name: str) -> None:
         ...
 

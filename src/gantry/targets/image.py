@@ -1,6 +1,6 @@
 from typing import Iterator
 
-from ._common import CopyServiceResources, CreateBuildFolder, Pipeline, Target
+from ._common import CopyServiceResources, CreateBuildFolder, Pipeline, Target, MANIFEST_FILE
 
 from .._types import Path, PathLike
 from ..build_manifest import BuildManifest, ImageEntry
@@ -80,7 +80,7 @@ class GenerateManifestFile:
                        Path(service_group.name) / service.name / 'Dockerfile')
             for service in service_group
         ])
-        manifest_file = self._build_folder / 'manifest.json'
+        manifest_file = self._build_folder / MANIFEST_FILE
         manifest.save(manifest_file)
         _logger.debug('Generated manifest at %s', manifest_file)
 
