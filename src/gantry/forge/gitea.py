@@ -159,6 +159,16 @@ class GiteaClient(ForgeClient):
         repos = cast(_Repository, resp.json())
         _logger.debug('Updated repo properties for %s.', repos['full_name'])
 
+    def get_clone_url(self, repo: str, type: Literal['ssh', 'https'] = 'ssh') -> str:
+        resp = self.send_http_request('GET', self._repos_endpoint(repo))
+        details = cast(_Repository, resp.json())
+
+        match type:
+            case 'ssh':
+                return details['ssh_url']
+            case 'https':
+                return details['clone_url']
+
     def get_server_version(self) -> str:
         resp = self.send_http_request('GET', self._version_endpoint)
         return resp.json()['version']
