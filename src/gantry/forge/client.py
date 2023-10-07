@@ -136,19 +136,6 @@ class ForgeClient(ABC):
         '''
 
     @abstractmethod
-    def clone_repo(self, name: str) -> None:
-        '''Clone a repo from the forge.
-
-        The repo is expected to be located in the organization specified in the
-        gantry configuration file.
-
-        Parameters
-        ----------
-        name : str
-            repo name
-        '''
-
-    @abstractmethod
     def create_repo(self, name: str, desc: str | None = None) -> None:
         '''Create a repo on the forge.
 
@@ -162,6 +149,32 @@ class ForgeClient(ABC):
         desc : str, optional
             optionally set the repo's description; this will only be applied if
             the forge supports it
+        '''
+
+    @abstractmethod
+    def get_clone_url(self, repo: str, type: Literal['ssh', 'https'] = 'ssh') -> str:
+        '''Get the clone URL for a repo on the software forge.
+
+        This method can return either an SSH or HTTPS clone URL.  By default it
+        will return the SSH URL since most clients tend to be configured for
+        that.
+
+        Parameters
+        ----------
+        repo : str
+            the repo to request the clone URL for
+        type : str
+            the type of clone URL to request; can be either ``ssh`` or ``https``
+
+        Returns
+        -------
+        str
+            the clone URL
+
+        Raises
+        ------
+        :class:`ForgeApiOperationFailed`
+            if the repo does not exist
         '''
 
     @abstractmethod

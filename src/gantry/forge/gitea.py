@@ -120,9 +120,6 @@ class GiteaClient(ForgeClient):
         else:
             return False
 
-    def clone_repo(self, name: str) -> None:
-        ...
-
     def create_repo(self, name: str, desc: str | None = None) -> None:
         if desc is None:
             desc = 'Gantry-managed Repo'

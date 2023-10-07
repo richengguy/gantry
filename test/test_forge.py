@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 import stat
+from typing import Literal
 from urllib.parse import urljoin
 
 import certifi
@@ -26,11 +27,11 @@ class MockForge(ForgeClient):
     def check_managed_repo(self, name: str) -> bool:
         return True
 
-    def clone_repo(self, name: str) -> None:
-        ...
-
     def create_repo(self, name: str) -> None:
         ...
+
+    def get_clone_url(self, repo: str, type: Literal['ssh', 'https'] = 'ssh') -> str:
+        return 'https://git.example.com'
 
     def get_server_version(self) -> str:
         return 'n/a'
