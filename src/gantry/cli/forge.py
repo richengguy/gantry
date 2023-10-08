@@ -1,27 +1,20 @@
 import click
 
-import pygit2
-
-from rich.progress import Progress, TaskID
 from rich.prompt import Prompt
 from rich.console import Console
 
 from ._common import ProgramOptions, print_header
+from ._git import clone_repo
 
 from .._types import Path
 from ..build_manifest import BuildManifest
 from ..config import Config
 from ..exceptions import CliException, GantryException
-from ..forge import make_client, AuthType, ForgeClient
+from ..forge import make_client
 from ..logging import get_app_logger
 
 
 _logger = get_app_logger()
-
-
-def _configure_pygit2(client: ForgeClient) -> '_GitCallbacks':
-    pygit2.settings.set_ssl_cert_locations(client.ca_certs, None)
-    return _GitCallbacks(client)
 
 
 def _copy_custom_cert(opts: ProgramOptions, certs: tuple[Path]) -> None:
@@ -51,37 +44,6 @@ def _check_config(opts: ProgramOptions) -> Config:
     _logger.debug('       Org: %s', opts.config.forge_owner)
 
     return opts.config
-
-
-class _GitCallbacks(pygit2.RemoteCallbacks):
-    def __init__(self, client: ForgeClient) -> None:
-        user = client.auth_info['username']
-        match client.auth_info['auth_type']:
-            case AuthType.BASIC:
-                passwd = client.auth_info['password']
-            case AuthType.TOKEN:
-                passwd = client.auth_info['api_token']
-            case _:
-                passwd = ''
-
-        credentials = pygit2.credentials.UserPass(user, passwd)
-
-        self._progress: Progress | None = None
-        self._task_id: TaskID | None = None
-
-        super().__init__(credentials=credentials)
-
-    def set_progress_bar(self, progress: Progress, task: TaskID) -> None:
-        self._progress = progress
-        self._task_id = task
-
-    def transfer_progress(self, stats: pygit2.remote.TransferProgress) -> None:
-        if self._progress is None or self._task_id is None:
-            return
-
-        self._progress.update(self._task_id,
-                              completed=stats.indexed_objects,
-                              total=stats.total_objects)
 
 
 @click.group('forge')
@@ -293,9 +255,10 @@ def cmd_repos_clone(opts: ProgramOptions, name: str, dest: Path) -> None:
     '''
     config = _check_config(opts)
     client = make_client(config, opts.app_folder)
-    git_callbacks = _configure_pygit2(client)
 
     console = Console()
+    console.print('Fetching the clone URL...')
+
     try:
         clone_url = client.get_clone_url(name, 'https')
         _logger.debug('Clone URL: %s', clone_url)
@@ -304,15 +267,8 @@ def cmd_repos_clone(opts: ProgramOptions, name: str, dest: Path) -> None:
         _logger.exception('%s', str(e), exc_info=e)
         raise CliException('Failed to clone repo...run with \'gantry -d\' to see traceback.')
 
-    try:
-        with Progress(console=console) as progress:
-            task = progress.add_task(f':arrow_down_small: Cloning `{name}`')
-            git_callbacks.set_progress_bar(progress, task)
-            pygit2.clone_repository(clone_url, dest, callbacks=git_callbacks)
-        _logger.debug('Finished `git clone`.')
-    except Exception as e:
-        _logger.exception('%s', str(e), exc_info=e)
-        raise CliException('Failed to clone repo...run with \'gantry -d\' to see traceback.')
+    clone_repo(client, clone_url, dest)
+    console.print(f'[bold green]\u2713[/bold green] Repo cloned to `{dest}`.')
 
 
 @cmd_repos.command('create')
