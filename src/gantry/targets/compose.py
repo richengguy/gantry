@@ -161,9 +161,9 @@ class BuildRouterConfig:
 
 
 class GenerateOrUpdateManifestFile:
-    def __init__(self, name: str, build_folder: Path) -> None:
+    def __init__(self, manifest_name: str, build_folder: Path) -> None:
         self._build_folder = build_folder
-        self._name = name
+        self._manifest_name = manifest_name
 
     def run(self, service_group: ServiceGroupDefinition) -> None:
         compose_file = self._build_folder / service_group.name / 'docker-compose.yml'
@@ -177,14 +177,19 @@ class GenerateOrUpdateManifestFile:
             manifest.save(manifest_json)
             _logger.debug('Updated manifest at \'%s\'', manifest_json)
         except FileNotFoundError:
-            manifest = BuildManifest(self._name, entries=[entry])
+            manifest = BuildManifest(self._manifest_name, entries=[entry])
             manifest.save(manifest_json)
             _logger.debug('Generated manifest at \'%s\'', manifest_json)
 
 
 class ComposeTarget(Target):
     '''Convert a service group into a Docker Compose file.'''
-    def __init__(self, name: str, output: PathLike, *, options: list[str] | None = None) -> None:
+    def __init__(self,
+                 manifest_name: str,
+                 output: PathLike,
+                 *,
+                 options: list[str] | None = None
+                 ) -> None:
         super().__init__(options=options)
         self._output = Path(output)
 
@@ -195,7 +200,7 @@ class ComposeTarget(Target):
             BuildComposeFile(self._output),
             BuildRouterConfig(self._output),
             CopyServiceResources(self._output, use_group_name=True),
-            GenerateOrUpdateManifestFile(name, self._output),
+            GenerateOrUpdateManifestFile(manifest_name, self._output),
         ])
 
     def build(self, service_group: ServiceGroupDefinition) -> None:

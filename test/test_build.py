@@ -79,7 +79,7 @@ def test_multi_service_group_image(samples_folder: Path, tmp_path) -> None:
         manifest_json = Path(td) / 'build' / 'services.image' / MANIFEST_FILE
         manifest = BuildManifest.load(manifest_json)
 
-        assert manifest.name == 'services-compose'
+        assert manifest.name == 'services-image'
         assert manifest.num_entries() == 5
 
         images = list(manifest.image_entries())

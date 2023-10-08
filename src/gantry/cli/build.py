@@ -51,7 +51,7 @@ def _build_image(service_group: ServiceGroupDefinition,
 
     console = Console()
     console.print(f'Building container images for [blue bold]{service_group.folder}[/blue bold].')
-    ImageTarget(namespace, version, output, options=options).build(service_group)
+    ImageTarget(manifest_name, namespace, version, output, options=options).build(service_group)
 
 
 TARGETS: dict[str, 'BuildTargetInfo'] = {
