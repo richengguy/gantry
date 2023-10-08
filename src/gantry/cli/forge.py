@@ -273,9 +273,14 @@ def cmd_repos_clone(opts: ProgramOptions, name: str, dest: Path) -> None:
 
 
 @cmd_repos.command('create')
+@click.option(
+    '--description', '-d',
+    help='An optional description for the new repo.',
+    type=str
+)
 @click.argument('name')
 @click.pass_obj
-def cmd_repos_create(opts: ProgramOptions, name: str) -> None:
+def cmd_repos_create(opts: ProgramOptions, description: str | None, name: str) -> None:
     '''Create a new service repo.
 
     This will create a new, empty repo called NAME in the service organization.
@@ -285,7 +290,7 @@ def cmd_repos_create(opts: ProgramOptions, name: str) -> None:
 
     console = Console()
     try:
-        full_name = client.create_repo(name)
+        full_name = client.create_repo(name, description)
         console.print(f'[bold green]\u2713[/bold green] Created \'{full_name}\'')
     except GantryException as e:
         _logger.exception('%s', str(e), exc_info=e)

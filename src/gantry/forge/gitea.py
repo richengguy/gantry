@@ -66,7 +66,7 @@ class GiteaClient(ForgeClient):
 
     def create_repo(self, name: str, desc: str | None = None) -> str:
         if desc is None:
-            desc = 'Gantry-managed Repo'
+            desc = 'A gantry-created repo.'
 
         # Create the repo.
         req_create = _CreateRepoRequest(name, desc)
