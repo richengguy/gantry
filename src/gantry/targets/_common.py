@@ -4,7 +4,7 @@ import shutil
 
 from .. import routers
 from .._types import Path
-from ..exceptions import GantryException
+from ..exceptions import BuildError
 from ..logging import get_app_logger
 from ..services import ServiceGroupDefinition
 
@@ -91,13 +91,13 @@ class Target(ABC):
                     key = parts[0]
                     value = parts[1]
                 case _:
-                    raise GantryException('Target option must be a string or a "key=value" format.')
+                    raise BuildError('Target option must be a string or a "key=value" format.')
 
             if len(key) == 0:
-                raise GantryException('Target option cannot be an empty string.')
+                raise BuildError('Target option cannot be an empty string.')
 
             if key not in accepted_options:
-                raise GantryException(f'Target does not support a "{key}" option.')
+                raise BuildError(f'Target does not support a "{key}" option.')
 
             self._parsed_options[key] = value
 
@@ -148,12 +148,15 @@ class CreateBuildFolder:
         self._use_group_name = use_group_name
 
     def run(self, service_group: ServiceGroupDefinition) -> None:
-        if self._overwrite:
-            _logger.debug('Overwriting existing build folder.')
+        output = resolve_build_folder(self._build_folder,
+                                      service_group,
+                                      use_group_name=self._use_group_name)
 
-        output = self._build_folder
-        if self._use_group_name:
-            output /= service_group.name
+        if self._overwrite:
+            _logger.debug('Overwriting existing build folder at %s.', output)
+        elif output.exists():
+            _logger.error('The `%s` folder already exists.', output)
+            raise BuildError('Folder already exists.')
 
         output.mkdir(parents=True, exist_ok=self._overwrite)
 
@@ -187,3 +190,31 @@ def copy_services_resources(service_group: ServiceGroupDefinition, folder: Path)
                 shutil.copytree(src, dst, dirs_exist_ok=True)
             else:
                 shutil.copy2(src, dst)
+
+
+def resolve_build_folder(root: Path,
+                         service_group: ServiceGroupDefinition,
+                         *,
+                         use_group_name: bool = False
+                         ) -> Path:
+    '''Resolves the build folder given a root path.
+
+    Parameters
+    ----------
+    root : Path
+        the root folder where the build folder will be placed
+    service_group : :class:`ServiceGroupDefinition`
+        service group the build folder is for
+    use_group_name : bool
+        use ``root/group-name`` instead of ``root`` as the build folder
+
+    Returns
+    -------
+    Path
+        the build folder path, which will be either the root path or a subfolder
+        based on the service group name
+    '''
+    output = root
+    if use_group_name:
+        output /= service_group.name
+    return output

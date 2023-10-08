@@ -16,22 +16,29 @@ from ..services import ServiceGroupDefinition
 from ..targets import ComposeTarget, ImageTarget, Target
 
 
+_logger = get_app_logger()
+
+
 class BuildTargetInfo(NamedTuple):
     target_type: Type[Target]
-    build: Callable[[ServiceGroupDefinition, Config | None, str, Path, list[str]], None]
+    build: Callable[[ServiceGroupDefinition, str, Config | None, str, Path, list[str]], None]
 
 
 def _build_compose(service_group: ServiceGroupDefinition,
+                   manifest_name: str,
                    config: Config | None,
                    version: str,
                    output: Path,
                    options: list[str]) -> None:
     console = Console()
-    console.print(f'Generating Docker Compose configuration at [blue bold]{output}[/blue bold].')
-    ComposeTarget(output, options=options).build(service_group)
+    console.print(
+        f'Generating Docker Compose configuration for [blue bold]{service_group.name}[/blue bold].'
+    )
+    ComposeTarget(manifest_name, output, options=options).build(service_group)
 
 
 def _build_image(service_group: ServiceGroupDefinition,
+                 manifest_name: str,
                  config: Config | None,
                  version: str,
                  output: Path,
@@ -39,7 +46,7 @@ def _build_image(service_group: ServiceGroupDefinition,
     if config is not None:
         namespace = config.registry_namespace
     else:
-        get_app_logger().info('Performing image build without a gantry configuration.')
+        _logger.info('Performing image build without a gantry configuration.')
         namespace = None
 
     console = Console()
@@ -128,6 +135,15 @@ def _list_targets(ctx: click.Context, param: click.Parameter, value: bool) -> No
     type=int
 )
 @click.option(
+    '--manifest-name', '-m',
+    metavar='NAME',
+    help=(
+        'An identifier for the generated manifest.  This will default to '
+        '`services-TARGET`.'
+    ),
+    type=str
+)
+@click.option(
     '--list-targets',
     is_flag=True,
     is_eager=True,
@@ -149,40 +165,56 @@ def _list_targets(ctx: click.Context, param: click.Parameter, value: bool) -> No
 )
 @click.argument('target', nargs=1, type=str)
 @click.argument(
-    'services_path',
-    metavar='SERVICE_GROUP',
-    nargs=1,
+    'services_paths',
+    metavar='SERVICE_GROUP ...',
+    nargs=-1,
     type=click.Path(exists=True, dir_okay=True, file_okay=False, path_type=Path)
 )
 @click.pass_obj
 def cmd(opts: ProgramOptions,
         tag: str | None,
         build_number: int | None,
+        manifest_name: str | None,
         output_path: Path | None,
         extra_options: list[str],
         target: str,
-        services_path: Path) -> None:
+        services_paths: tuple[Path]) -> None:
     '''Build a service group for a specific target.
 
     The SERVICE_GROUP is the path to the folder containing a 'services.yml'
-    service group definition file.  The available targets can be listed with
-    '--list-targets'.
+    service group definition file.  Multiple service groups can be built into a
+    single bundle.
+
+    The available targets can be listed with '--list-targets'.
     '''
     print_header()
 
     if output_path is None:
         output_path = Path('./build') / f'services.{target}'
 
-    version = _generate_version(tag, build_number)
-    service_group = load_service_group(services_path)
+    if manifest_name is None:
+        manifest_name = f'services-{target}'
 
-    try:
-        build_target = TARGETS[target]
-        build_target.build(service_group, opts.config, version, output_path, extra_options)
-    except KeyError:
+    version = _generate_version(tag, build_number)
+    build_target = TARGETS.get(target)
+
+    if build_target is None:
         raise CliException(
             f'There is no `{target}` build target.  See available targets with '
             '\'--list-targets\'.'
             )
-    except GantryException as e:
-        raise CliException(f'Failed to build {services_path}; {str(e)}')
+
+    if len(services_paths) == 0:
+        _logger.info('No service groups were provided.  Nothing to build.')
+
+    for path in services_paths:
+        try:
+            service_group = load_service_group(path)
+            build_target.build(service_group,
+                               manifest_name,
+                               opts.config,
+                               version,
+                               output_path,
+                               extra_options)
+        except GantryException as e:
+            raise CliException(f'Failed to build {service_group.name}: {str(e)}')
