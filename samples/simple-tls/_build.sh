@@ -1,7 +1,7 @@
 #!/bin/bash
 
 function get_state() {
-    docker compose ps --format json | jq "map(select(.Name == \"$1\"))" | jq -r '.[0].State'
+    docker compose ps --format json $1 | jq -r '.State'
 }
 
 gantry build compose -o $OUTPUT_FOLDER $SAMPLE_FOLDER
