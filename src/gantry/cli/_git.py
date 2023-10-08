@@ -47,7 +47,7 @@ class _GitCallbacks(pygit2.RemoteCallbacks):
                               total=stats.total_objects)
 
 
-def clone_repo(client: ForgeClient, clone_url: str, dest: Path) -> None:
+def clone_repo(client: ForgeClient, clone_url: str, dest: Path) -> pygit2.Repository:
     '''Clone a git repo.
 
     Parameters
@@ -58,6 +58,11 @@ def clone_repo(client: ForgeClient, clone_url: str, dest: Path) -> None:
         the repo's clone URL
     dest : path-like object
         location where the repo is cloned to
+
+    Returns
+    -------
+    :class:`pygit2.Repository`
+        the cloned repo
     '''
     git_callbacks = _configure_pygit2(client)
 
@@ -67,9 +72,42 @@ def clone_repo(client: ForgeClient, clone_url: str, dest: Path) -> None:
         with Progress() as progress:
             task = progress.add_task(f':arrow_down_small: Cloning `{clone_url}`')
             git_callbacks.set_progress_bar(progress, task)
-            pygit2.clone_repository(clone_url, dest, callbacks=git_callbacks)
+            repo = pygit2.clone_repository(clone_url, dest, callbacks=git_callbacks)
 
         _logger.debug('Finished `git clone`.')
+        return repo
     except Exception as e:
         _logger.exception('%s', str(e), exc_info=e)
         raise CliException('Failed to clone repo...run with \'gantry -d\' to see traceback.')
+
+
+def discover_repo(candidate_path: Path) -> pygit2.Repository | None:
+    '''Look for a repo at a given path.
+
+    Parameters
+    ----------
+    candidate_path : Path
+        a folder that may contain a repo
+
+    Returns
+    -------
+    :class:`pygit2.Repository` or ``None``
+        a repository instance if the folder is a git repo or ``None`` if it
+        isn't
+    '''
+    try:
+        return pygit2.Repository(candidate_path.as_posix(), pygit2.GIT_REPOSITORY_OPEN_NO_SEARCH)
+    except pygit2.GitError:
+        return None
+
+
+def pull_changes(repo: pygit2.Repository, client: ForgeClient) -> None:
+    '''Pull the latest changes for the repository.
+
+    Parameters
+    ----------
+    repo : :class:`pygit2.Repository`
+        the repo
+    client : :class:`ForgeClient`
+        used to ensure the pull uses the correct credentials
+    '''

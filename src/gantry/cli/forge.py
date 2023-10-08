@@ -4,7 +4,7 @@ from rich.prompt import Prompt
 from rich.console import Console
 
 from ._common import ProgramOptions, print_header
-from ._git import clone_repo
+from ._git import clone_repo, discover_repo
 
 from .._types import Path
 from ..build_manifest import BuildManifest
@@ -169,6 +169,64 @@ def cmd_authenticate(opts: ProgramOptions,
     except GantryException as e:
         _logger.exception('%s', str(e), exc_info=e)
         raise CliException('Authentication failed...run with \'gantry -d\' to see traceback.')
+
+
+@cmd.command('commit')
+@click.option(
+    '--repos-folder', '-r',
+    metavar='DIR',
+    help='Location where all repos are cloned to.',
+    default=Path('./repos'),
+    type=click.Path(file_okay=False, dir_okay=True)
+)
+@click.argument(
+    'manifest_path',
+    metavar='MANIFEST',
+    type=click.Path(exists=True, file_okay=True, dir_okay=False)
+)
+@click.pass_obj
+def cmd_commit(opts: ProgramOptions,
+               repos_folder: Path,
+               manifest_path: Path
+               ) -> None:
+    '''Commit build artifacts to a forge repo.
+
+    This will commit any build artifacts specified in the MANIFEST.  The command
+    will take care of creating and cloning the repo, as needed.
+    '''
+    config = _check_config(opts)
+    client = make_client(config, opts.app_folder)
+
+    manifest = BuildManifest.load(manifest_path)
+    _logger.debug('Loaded manifest from \'%s\'.', manifest_path)
+
+    console = Console()
+
+    # 1. Check if the repo exists.  If yes, get the clone URL.  Otherwise,
+    #    create it first.
+    try:
+        repos = client.list_repos()
+
+        if manifest.name not in repos:
+            _logger.debug('Could not find a %s repo; creating one.', manifest.name)
+            repo_name = client.create_repo(manifest.name, manifest.description)
+            console.print(f':new: Created a new service repo called \'{repo_name}\'.')
+
+        clone_url = client.get_clone_url(manifest.name, 'https')
+        _logger.debug('Obtained clone url: \'%s\'', clone_url)
+    except GantryException as e:
+        _logger.error('%s', str(e), exc_info=e)
+        raise CliException('Commit failed...run with \'gantry -d\' to see traceback.')
+
+    # 2. Update the local repo.  This performs a 'clone' first if the repo isn't
+    #    on the local disk.
+    repos_folder.mkdir(parents=True, exist_ok=True)
+    repo_location = repos_folder / manifest.name
+
+    if repo := discover_repo(repo_location):
+        _logger.debug('Found repo at \'%s\'.', repo)
+    else:
+        repo = clone_repo(client, clone_url, repo_location)
 
 
 @cmd.command('push')

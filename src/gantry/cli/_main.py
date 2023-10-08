@@ -5,7 +5,7 @@ import click
 
 import rich
 
-from . import build, forge, schemas
+from . import build, forge, schemas  # noqa: F401
 from ._common import ProgramOptions
 
 from .. import __version__
@@ -73,5 +73,5 @@ def main(ctx: click.Context,
 
 
 main.add_command(build.cmd)
-main.add_command(forge.cmd)
+# main.add_command(forge.cmd)
 main.add_command(schemas.cmd)
