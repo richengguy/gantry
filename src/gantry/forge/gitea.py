@@ -120,7 +120,7 @@ class GiteaClient(ForgeClient):
         else:
             return False
 
-    def create_repo(self, name: str, desc: str | None = None) -> None:
+    def create_repo(self, name: str, desc: str | None = None) -> str:
         if desc is None:
             desc = 'Gantry-managed Repo'
 
@@ -158,6 +158,12 @@ class GiteaClient(ForgeClient):
         resp = self.send_http_request('PATCH', self._repos_endpoint(name), json=asdict(req_edit))
         repos = cast(_Repository, resp.json())
         _logger.debug('Updated repo properties for %s.', repos['full_name'])
+        return repos['full_name']
+
+    def delete_repo(self, name: str) -> str:
+        self.send_http_request('DELETE', self._repos_endpoint(name), success=set([204]))
+        _logger.debug('Successfully deleted %s/%s.', self.owner_account, name)
+        return f'{self.owner_account}/{name}'
 
     def get_clone_url(self, repo: str, type: Literal['ssh', 'https'] = 'ssh') -> str:
         resp = self.send_http_request('GET', self._repos_endpoint(repo))

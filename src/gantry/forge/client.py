@@ -136,7 +136,7 @@ class ForgeClient(ABC):
         '''
 
     @abstractmethod
-    def create_repo(self, name: str, desc: str | None = None) -> None:
+    def create_repo(self, name: str, desc: str | None = None) -> str:
         '''Create a repo on the forge.
 
         The repo will be created in the organization specified in the gantry
@@ -149,6 +149,30 @@ class ForgeClient(ABC):
         desc : str, optional
             optionally set the repo's description; this will only be applied if
             the forge supports it
+
+        Returns
+        -------
+        str
+            the full name of the newly created repo
+        '''
+
+    @abstractmethod
+    def delete_repo(self, name: str) -> str:
+        '''Delete a repo on the forge.
+
+        The repo will be deleted in its entirety from the forge.  It is assumed
+        to exist in the organization specified in the gantry configuration file.
+        This will be ``<org>/<name>`` on the forge.
+
+        Parmaeters
+        ----------
+        name : str
+            repo name
+
+        Returns
+        -------
+        str
+            the full name of the deleted repo
         '''
 
     @abstractmethod
@@ -300,6 +324,8 @@ class ForgeClient(ABC):
             ) from exc
 
         if resp.status not in success:
+            _logger.error('HTTP Status: %d', resp.status)
+            _logger.error('Server Response: %s', resp.data.decode('utf-8'))
             raise ForgeApiOperationFailed(
                 self.provider_name(),
                 f'Operation failed with {resp.status}.'

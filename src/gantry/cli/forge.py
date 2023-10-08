@@ -236,22 +236,52 @@ def cmd_version(opts: ProgramOptions) -> None:
 
 @cmd.group('repos')
 def cmd_repos() -> None:
-    '''Manage the service repos on the software forge.'''
+    '''Manage the service repos on the software forge.
+
+    This is a low-level command for directly managing remote repos on the forge.
+    Use the 'checkout' and 'commit' commands when working with build manifests.
+    '''
 
 
 @cmd_repos.command('create')
 @click.argument('name')
 @click.pass_obj
 def cmd_repos_create(opts: ProgramOptions, name: str) -> None:
-    '''Create a service repo.'''
+    '''Create a service repo.
+
+    This will create a new, empty repo called NAME in the service organization.
+    '''
     config = _check_config(opts)
     client = make_client(config, opts.app_folder)
 
+    console = Console()
     try:
-        client.create_repo(name)
+        full_name = client.create_repo(name)
+        console.print(f'[bold green]\u2713[/bold green] Created \'{full_name}\'')
     except GantryException as e:
         _logger.exception('%s', str(e), exc_info=e)
         raise CliException('Failed to create repo...run with \'gantry -d\' to see traceback.')
+
+
+@cmd_repos.command('delete')
+@click.argument('name')
+@click.pass_obj
+def cmd_repos_delete(opts: ProgramOptions, name: str) -> None:
+    '''Delete a service repo.
+
+    This is a destructive action and *will* remove NAME from the service
+    organization.
+    '''
+    config = _check_config(opts)
+    client = make_client(config, opts.app_folder)
+
+    console = Console()
+    try:
+        full_name = client.delete_repo(name)
+        console.print(f':wastebasket: Deleted \'{full_name}\'')
+    except GantryException as e:
+        _logger.exception("%s", str(e), exc_info=e)
+        raise CliException('Failed to delete repo...run with \'gantry -d\' to see traceback.')
 
 
 @cmd_repos.command('list')
@@ -263,4 +293,4 @@ def cmd_repos_list(opts: ProgramOptions) -> None:
 
     console = Console()
     for repo in client.list_repos():
-        console.print(f'{repo} - {client.check_managed_repo(repo)}')
+        console.print(f'{repo} - {client.check_managed_repo(repo)} ({client.get_clone_url(repo)})')
