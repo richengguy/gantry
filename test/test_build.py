@@ -40,7 +40,22 @@ def test_manifest_generation(samples_folder: Path, tmp_path: Path) -> None:
         assert images[1].source == Path('build-args/with-args/Dockerfile')
 
 
-def test_multi_service_group_compose(samples_folder: Path, tmp_path) -> None:
+def test_custom_manifest_name(samples_folder: Path, tmp_path: Path) -> None:
+    path = samples_folder / 'service-definition' / 'build-args'
+
+    runner = CliRunner()
+    with runner.isolated_filesystem(temp_dir=tmp_path) as td:
+        args = ['build', '-X', 'skip-build', '-m', 'custom-name', 'image', str(path)]
+        result = runner.invoke(cli.main, args)
+        print(result.stdout)
+        assert result.exit_code == 0
+
+        manifest_file = Path(td) / 'build' / 'services.image' / MANIFEST_FILE
+        manifest = BuildManifest.load(manifest_file)
+        assert manifest.name == 'custom-name'
+
+
+def test_multi_service_group_compose(samples_folder: Path, tmp_path: Path) -> None:
     group1 = samples_folder / 'service-definition' / 'build-args'
     group2 = samples_folder / 'service-definition' / 'entrypoints'
 
@@ -65,7 +80,7 @@ def test_multi_service_group_compose(samples_folder: Path, tmp_path) -> None:
         assert (Path(td) / 'build' / 'services.compose' / 'entrypoints').exists()
 
 
-def test_multi_service_group_image(samples_folder: Path, tmp_path) -> None:
+def test_multi_service_group_image(samples_folder: Path, tmp_path: Path) -> None:
     group1 = samples_folder / 'service-definition' / 'build-args'
     group2 = samples_folder / 'service-definition' / 'entrypoints'
 
