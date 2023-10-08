@@ -265,6 +265,7 @@ def cmd_repos_create(opts: ProgramOptions, name: str) -> None:
 
 @cmd_repos.command('delete')
 @click.argument('name')
+@click.confirmation_option(prompt='Are you sure you want to delete this repo?')
 @click.pass_obj
 def cmd_repos_delete(opts: ProgramOptions, name: str) -> None:
     '''Delete a service repo.
