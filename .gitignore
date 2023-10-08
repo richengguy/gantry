@@ -3,7 +3,6 @@
 # Gantry-specific files
 gantry.yml
 .gantry/
-repos/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
