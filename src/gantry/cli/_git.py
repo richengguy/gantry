@@ -1,4 +1,4 @@
-import pygit2
+import pygit2  # type: ignore
 
 from rich.progress import Progress, TaskID
 
