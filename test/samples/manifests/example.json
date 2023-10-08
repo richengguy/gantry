@@ -1,5 +1,6 @@
 {
     "type": "gantry-manifest",
+    "name": "example",
     "contents": [
         {
             "type": "image",

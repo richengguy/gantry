@@ -75,11 +75,13 @@ class GenerateManifestFile:
         self._tag = tag
 
     def run(self, service_group: ServiceGroupDefinition) -> None:
-        manifest = BuildManifest(entries=[
-            ImageEntry(_create_image_name(self._namespace, self._tag, service),
-                       Path(service_group.name) / service.name / 'Dockerfile')
-            for service in service_group
-        ])
+        manifest = BuildManifest(
+            service_group.name,
+            entries=[
+                ImageEntry(_create_image_name(self._namespace, self._tag, service),
+                           Path(service_group.name) / service.name / 'Dockerfile')
+                for service in service_group
+            ])
         manifest_file = self._build_folder / MANIFEST_FILE
         manifest.save(manifest_file)
         _logger.debug('Generated manifest at %s', manifest_file)

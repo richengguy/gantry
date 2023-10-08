@@ -161,9 +161,11 @@ class GenerateManifestFile:
     def run(self, service_group: ServiceGroupDefinition) -> None:
         compose_file = self._build_folder / service_group.name / 'docker-compose.yml'
         manifest_json = self._build_folder / MANIFEST_FILE
-        manifest = BuildManifest(entries=[
-            DockerComposeEntry(compose_file.relative_to(self._build_folder), True)
-        ])
+        manifest = BuildManifest(
+            service_group.name,
+            entries=[
+                DockerComposeEntry(compose_file.relative_to(self._build_folder), True)
+            ])
         manifest.save(manifest_json)
         _logger.debug('Generated manifest at %s', manifest_json)
 

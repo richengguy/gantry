@@ -18,7 +18,7 @@ from ..targets import ComposeTarget, ImageTarget, Target
 
 class BuildTargetInfo(NamedTuple):
     target_type: Type[Target]
-    callback: Callable[[ServiceGroupDefinition, Config | None, str, Path, list[str]], None]
+    build: Callable[[ServiceGroupDefinition, Config | None, str, Path, list[str]], None]
 
 
 def _build_compose(service_group: ServiceGroupDefinition,
@@ -177,8 +177,8 @@ def cmd(opts: ProgramOptions,
     service_group = load_service_group(services_path)
 
     try:
-        info = TARGETS[target]
-        info.callback(service_group, opts.config, version, output_path, extra_options)
+        build_target = TARGETS[target]
+        build_target.build(service_group, opts.config, version, output_path, extra_options)
     except KeyError:
         raise CliException(
             f'There is no `{target}` build target.  See available targets with '

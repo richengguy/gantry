@@ -67,6 +67,11 @@
             "enum": ["gantry-manifest"],
             "default": "gantry-manifest"
         },
+        "name": {
+            "title": "Artifact Name",
+            "description": "Used to identify the specific build manifest, particularly when storing its contents on a remote forge.",
+            "type": "string"
+        },
         "contents": {
             "type": "array",
             "title": "Manifest Contents",
@@ -78,6 +83,6 @@
             }
         }
     },
-    "required": ["type", "contents"],
+    "required": ["type", "name", "contents"],
     "additionalProperties": false
 }

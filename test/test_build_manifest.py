@@ -9,7 +9,7 @@ from gantry.targets import MANIFEST_FILE
 
 
 def test_create_manifest(tmp_path: Path) -> None:
-    manifest = BuildManifest()
+    manifest = BuildManifest('test_create')
     manifest.append_entry(DockerComposeEntry(Path('./folder/docker-compose.yml'), False))
     manifest.append_entry(ImageEntry('repo/image:1234', Path('./folder/Dockerfile')))
 
@@ -18,6 +18,8 @@ def test_create_manifest(tmp_path: Path) -> None:
 
     with manifest_json.open('rt') as f:
         items = json.load(f)
+
+    assert items['name'] == 'test_create'
 
     assert len(items['contents']) == 2
 
@@ -49,11 +51,13 @@ def test_load_manifest(samples_folder: Path) -> None:
 
 
 def test_roundtrip_manifest(tmp_path: Path) -> None:
-    manifest = BuildManifest(entries=[
-        DockerComposeEntry(Path('./first-service/docker-compose.yml'), True),
-        ImageEntry('repo/image:1234', Path('./second-service/Dockerfile')),
-        DockerComposeEntry(Path('./third-service/docker-compose.yml'), False)
-    ])
+    manifest = BuildManifest(
+        "roundtrip-test",
+        entries=[
+            DockerComposeEntry(Path('./first-service/docker-compose.yml'), True),
+            ImageEntry('repo/image:1234', Path('./second-service/Dockerfile')),
+            DockerComposeEntry(Path('./third-service/docker-compose.yml'), False)
+        ])
 
     # Serialize
     json_file = tmp_path / MANIFEST_FILE
@@ -61,6 +65,7 @@ def test_roundtrip_manifest(tmp_path: Path) -> None:
 
     # Deserialize
     loaded_manifest = BuildManifest.load(json_file)
+    assert loaded_manifest.name == 'roundtrip-test'
     assert loaded_manifest.num_entries() == 3
 
     compose_entries = list(loaded_manifest.docker_compose_entries())

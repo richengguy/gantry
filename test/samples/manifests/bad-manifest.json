@@ -1,5 +1,6 @@
 {
     "type": "gantry-manifest",
+    "name": "bad-manifest",
     "contents": [
         {
             "type": "image",
