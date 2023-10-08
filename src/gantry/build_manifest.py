@@ -13,6 +13,9 @@ from .exceptions import (
 from .schemas import Schema, validate_object
 
 
+MANIFEST_TYPE = 'gantry-manifest'
+
+
 class EntryType(str, Enum):
     '''The type of entry within a build manifest.'''
     DOCKER_COMPOSE = 'docker-compose'
@@ -93,23 +96,46 @@ class ImageEntry(Entry):
 
 class BuildManifest:
     '''Defines the contents of a gantry build.'''
-    def __init__(self, *, entries: list[Entry] | None = None, source: Path | None = None) -> None:
+    def __init__(self,
+                 name: str,
+                 *,
+                 description: str | None = None,
+                 entries: list[Entry] | None = None,
+                 source: Path | None = None
+                 ) -> None:
         '''
         Parameters
         ----------
+        name : str
+            the manifest's name
         entries : list of :class:`Entry`
             the entries to use in the manifest; defaults to an empty list
         source : path, optional
             path to the original JSON file; should be left unset when creating
             a new manifest
         '''
+        if len(name) == 0:
+            raise ValueError('Manifest name cannot be an empty string.')
+
+        self._description = description
+        self._name = name
         self._entries: list[Entry] = entries if entries is not None else []
         self._source = source
+
+    @property
+    def description(self) -> str | None:
+        '''str, optional: A short description about what the manifest contains.'''
+        return self._description
 
     @property
     def is_resolved(self) -> bool:
         '''bool: Does the object have an associated JSON file?'''
         return self._source is not None
+
+    @property
+    def name(self) -> str:
+        '''str: The name used to identify the manifest.'''
+        return self._name
 
     def append_entry(self, entry: Entry) -> None:
         '''Add an entry to the end of the manifest.
@@ -184,9 +210,13 @@ class BuildManifest:
             location to save the manifest
         '''
         manifest = {
-            'type': 'gantry-manifest',
+            'type': MANIFEST_TYPE,
+            'name': self._name,
             'contents': [entry.to_dict() for entry in self._entries]
         }
+
+        if self._description is not None:
+            manifest['description'] = self._description
 
         path = Path(path)
         with path.open('wt') as f:
@@ -221,7 +251,7 @@ class BuildManifest:
         if len(errors) != 0:
             raise BuildManifestValidationError(errors)
 
-        manifest = BuildManifest(source=path)
+        manifest = BuildManifest(parsed['name'], description=parsed.get('description'), source=path)
         item: dict
         for item in parsed['contents']:
             match item['type']:

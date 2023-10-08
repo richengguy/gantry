@@ -1,5 +1,14 @@
 from ._base import GantryException
 
+from .build import (
+    BuildError,
+    ClientConnectionError,
+    ComposeServiceBuildError,
+    ComposeTargetException,
+    ImageTargetException,
+    ServiceImageBuildError
+)
+
 from .build_manifest import (
     BuildManifestException,
     BuildManifestBadFilePathError,
@@ -29,15 +38,8 @@ from .forge import (
     ForgeUrlInvalidError,
 )
 
-from .images import (
-    ImageTargetException,
-    ClientConnectionError,
-    ServiceImageBuildError,
-)
-
 from .services import (
     ServiceConfigurationException,
-    ComposeServiceBuildError,
     InvalidServiceDefinitionError,
     MissingTemplateError,
     ServiceDefinitionNotFoundError,

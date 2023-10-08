@@ -13,10 +13,6 @@ class ServiceConfigurationException(GantryException):
         super().__init__(*args)
 
 
-class ComposeServiceBuildError(ServiceConfigurationException):
-    '''Exception raised when errors occurs building the Compose services.'''
-
-
 class InvalidServiceDefinitionError(ServiceConfigurationException):
     '''Exception raised when a service definition file failed to validate.'''
     class ErrorInfo(NamedTuple):

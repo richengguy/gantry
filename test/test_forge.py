@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 import stat
+from typing import Literal
 from urllib.parse import urljoin
 
 import certifi
@@ -16,14 +17,27 @@ from urllib3.util import Url, parse_url
 
 class MockForge(ForgeClient):
     def __init__(self, app_folder: Path, *, url: str = 'https://localhost') -> None:
-        super().__init__(app_folder, url)
+        super().__init__(app_folder, url, 'mock_account')
+        assert self._owner == 'mock_account'
 
     @property
-    def endpoint(self) -> Url:
+    def api_base_url(self) -> Url:
         return parse_url(urljoin(self._url.url, '/api/v1/mock'))
+
+    def create_repo(self, name: str) -> str:
+        return 'test/repo'
+
+    def delete_repo(self, name: str) -> str:
+        return 'test/repo'
+
+    def get_clone_url(self, repo: str, type: Literal['ssh', 'https'] = 'ssh') -> str:
+        return 'https://git.example.com'
 
     def get_server_version(self) -> str:
         return 'n/a'
+
+    def list_repos(self) -> list[str]:
+        return ['a repo']
 
     @staticmethod
     def provider_name() -> str:
@@ -61,7 +75,7 @@ def test_create_new_forge(tmp_path: Path) -> None:
 
 def test_correct_endpoint(tmp_path: Path) -> None:
     mock = MockForge(tmp_path, url='https://example.com')
-    assert mock.endpoint.url == 'https://example.com/api/v1/mock'
+    assert mock.api_base_url.url == 'https://example.com/api/v1/mock'
 
 
 def test_load_existing_auth_info(tmp_path: Path) -> None:

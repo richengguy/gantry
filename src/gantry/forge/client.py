@@ -1,12 +1,15 @@
 from abc import ABC, abstractmethod
 from enum import StrEnum
 import json
-from typing import Callable, TypedDict, NotRequired
+from typing import cast, Any, Callable, Literal, TypedDict, NotRequired
 
 import certifi
 
+from urllib.parse import urljoin
+
 from urllib3 import PoolManager
 import urllib3.exceptions
+from urllib3.response import BaseHTTPResponse
 from urllib3.util import Url, parse_url
 
 from .. import __version__
@@ -22,6 +25,8 @@ from ..logging import get_app_logger
 
 
 _logger = get_app_logger('forge')
+
+HttpMethod = Literal['GET', 'DELETE', 'PATCH', 'POST', 'PUT']
 
 
 class AuthType(StrEnum):
@@ -52,7 +57,7 @@ class ForgeClient(ABC):
     with a software forge, such as authentication and pushing up container
     images.
     '''
-    def __init__(self, app_folder: Path, url: str) -> None:
+    def __init__(self, app_folder: Path, url: str, owner: str) -> None:
         '''
         Parameters
         ----------
@@ -60,12 +65,12 @@ class ForgeClient(ABC):
             gantry's working folder
         url : str
             service API URL
-        cert : path, optional
-            path to a custom root cert if the forge does not use a public cert
+        owner : str
+            name of the account/organization the client interacts with
         '''
         provider_folder = app_folder / self.provider_name()
         self._auth_file = provider_folder / 'auth.json'
-        self._docker_config = provider_folder / 'docker.json'
+        self._owner = owner
 
         try:
             self._url = parse_url(url)
@@ -108,8 +113,74 @@ class ForgeClient(ABC):
                 )
 
         with Docker(ca_certs=self._ca_certs) as client:
-            _logger.debug('Logging into container registry at %s', self.endpoint)
-            client.login(self.endpoint, username, password)
+            _logger.debug('Logging into container registry at %s', self.url)
+            client.login(self.url, username, password)
+
+    @abstractmethod
+    def create_repo(self, name: str, desc: str | None = None) -> str:
+        '''Create a repo on the forge.
+
+        The repo will be created in the organization specified in the gantry
+        configuration file.  The repo will be ``<org>/<name>`` on the forge.
+
+        Parameters
+        ----------
+        name : str
+            repo name
+        desc : str, optional
+            optionally set the repo's description; this will only be applied if
+            the forge supports it
+
+        Returns
+        -------
+        str
+            the full name of the newly created repo
+        '''
+
+    @abstractmethod
+    def delete_repo(self, name: str) -> str:
+        '''Delete a repo on the forge.
+
+        The repo will be deleted in its entirety from the forge.  It is assumed
+        to exist in the organization specified in the gantry configuration file.
+        This will be ``<org>/<name>`` on the forge.
+
+        Parmaeters
+        ----------
+        name : str
+            repo name
+
+        Returns
+        -------
+        str
+            the full name of the deleted repo
+        '''
+
+    @abstractmethod
+    def get_clone_url(self, repo: str, type: Literal['ssh', 'https'] = 'ssh') -> str:
+        '''Get the clone URL for a repo on the software forge.
+
+        This method can return either an SSH or HTTPS clone URL.  By default it
+        will return the SSH URL since most clients tend to be configured for
+        that.
+
+        Parameters
+        ----------
+        repo : str
+            the repo to request the clone URL for
+        type : str
+            the type of clone URL to request; can be either ``ssh`` or ``https``
+
+        Returns
+        -------
+        str
+            the clone URL
+
+        Raises
+        ------
+        :class:`ForgeApiOperationFailed`
+            if the repo does not exist
+        '''
 
     @abstractmethod
     def get_server_version(self) -> str:
@@ -128,6 +199,16 @@ class ForgeClient(ABC):
         ------
         :class:`ForgeApiOperationFailed`
             if the client failed to get the server version
+        '''
+
+    @abstractmethod
+    def list_repos(self) -> list[str]:
+        '''List the repos associated with the currently authenticated account.
+
+        Returns
+        -------
+        list of str
+            list of repo names
         '''
 
     def push_image(self, name: str, *,
@@ -169,6 +250,70 @@ class ForgeClient(ABC):
                 for resp in client.push_image_streaming(full_name):
                     status_fn(resp)
 
+    def send_http_request(self,
+                          method: HttpMethod,
+                          target: str,
+                          *,
+                          body: str | None = None,
+                          json: Any | None = None,
+                          success: set[int] = set([200])
+                          ) -> BaseHTTPResponse:
+        '''Send an HTTP request to the forge.
+
+        This is a low-level method used to send requests to a remote forge.  It
+        performs some exception handling to ensure that the request went through
+        correctly.  If verification passes then the HTTP response object is
+        returned.
+
+        The provided endpoint is will be joined with the URL provided when the
+        client is first initialized.  The caller will responsible for verifying
+        the endpoint, and the request body, are constructed correctly.
+
+        Parameters
+        ----------
+        method : str
+            a string containing the HTTP request type, e.g., 'GET'
+        endpoint : str
+            the endpoint the request is being sent to
+        body : str, optional
+            the optional string-encoded HTTP request body
+        json : object, optional
+            an optional object to encode as a JSON object
+        success : set of ints
+            the set of expected HTTP status codes indicating a successful
+            operation, defaults to ``{200}``
+
+        Returns
+        -------
+        :class:`BaseHTTPResponse`
+            the HTTP response instance
+
+        Raises
+        ------
+        :exc:`ForgeApiOperationFailed`
+            if the HTTP request failed
+        '''
+        endpoint = urljoin(self.api_base_url, target)
+        url = urljoin(self._url.url, endpoint)
+        try:
+            _logger.debug('Making %s request to %s', method, url)
+            resp = self._http.request(method, url, headers=self._headers, body=body, json=json)
+        except urllib3.exceptions.RequestError as exc:
+            raise ForgeApiOperationFailed(
+                self.provider_name(),
+                'Initial HTTP request failed.'
+            ) from exc
+
+        if resp.status not in success:
+            _logger.error('HTTP Status: %d', resp.status)
+            _logger.error('Server Response: %s', resp.data.decode('utf-8'))
+            raise ForgeApiOperationFailed(
+                self.provider_name(),
+                f'Operation failed with {resp.status}.'
+            )
+
+        return resp
+
     def set_basic_auth(self, *, user: str, passwd: str) -> None:
         '''Set the client to connect using HTTP basic authentication.
 
@@ -203,14 +348,34 @@ class ForgeClient(ABC):
         self._store_auth_info()
 
     @property
+    def auth_info(self) -> ForgeAuth:
+        ''':class:`ForgeAuth`: Forge authentication credentials.'''
+        return self._auth_info
+
+    @property
     def ca_certs(self) -> str:
-        '''str: Path to the root CA certs used by the forge provider.'''
+        '''str: Path to the root CA certs used by the forge provider.
+
+        This will always be the path to a single file.  The client will use
+        either a custom certificate or one from ``certifi``.  Both cases will
+        use certificate bundles.
+        '''
         return self._ca_certs
 
     @property
     @abstractmethod
-    def endpoint(self) -> Url:
-        '''Url: The API endpoint for this client.'''
+    def api_base_url(self) -> str:
+        '''str: The base URL for the forge's API.'''
+
+    @property
+    def owner_account(self) -> str:
+        '''str: The account the client interacts with.'''
+        return self._owner
+
+    @property
+    def url(self) -> Url:
+        '''Url: The URL of the software forge.'''
+        return self._url
 
     @staticmethod
     @abstractmethod
@@ -253,7 +418,7 @@ class ForgeClient(ABC):
     def _load_auth_info(self) -> None:
         try:
             with self._auth_file.open('rt') as f:
-                self._auth_info = json.load(f)
+                self._auth_info = cast(ForgeAuth, json.load(f))
         except FileNotFoundError:
             self._auth_info = ForgeAuth(auth_type=AuthType.NONE)
             with self._auth_file.open('wt') as f:

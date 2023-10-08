@@ -1,6 +1,12 @@
 from typing import NamedTuple
 
-from ._common import CopyServiceResources, CreateBuildFolder, Pipeline, Target
+from ._common import (
+    CopyServiceResources,
+    CreateBuildFolder,
+    Pipeline,
+    Target,
+    MANIFEST_FILE
+)
 
 from .. import routers
 from .._compose_spec import ComposeService
@@ -154,37 +160,47 @@ class BuildRouterConfig:
         _logger.debug('Built router config to \'%s\'', config_file)
 
 
-class GenerateManifestFile:
-    def __init__(self, build_folder: Path) -> None:
+class GenerateOrUpdateManifestFile:
+    def __init__(self, manifest_name: str, build_folder: Path) -> None:
         self._build_folder = build_folder
+        self._manifest_name = manifest_name
 
     def run(self, service_group: ServiceGroupDefinition) -> None:
         compose_file = self._build_folder / service_group.name / 'docker-compose.yml'
-        manifest_json = self._build_folder / 'manifest.json'
-        manifest = BuildManifest(entries=[
-            DockerComposeEntry(compose_file.relative_to(self._build_folder), True)
-        ])
-        manifest.save(manifest_json)
-        _logger.debug('Generated manifest at %s', manifest_json)
+        manifest_json = self._build_folder / MANIFEST_FILE
+
+        entry = DockerComposeEntry(compose_file.relative_to(self._build_folder), True)
+
+        try:
+            manifest = BuildManifest.load(manifest_json)
+            manifest.append_entry(entry)
+            manifest.save(manifest_json)
+            _logger.debug('Updated manifest at \'%s\'', manifest_json)
+        except FileNotFoundError:
+            manifest = BuildManifest(self._manifest_name, entries=[entry])
+            manifest.save(manifest_json)
+            _logger.debug('Generated manifest at \'%s\'', manifest_json)
 
 
 class ComposeTarget(Target):
     '''Convert a service group into a Docker Compose file.'''
-    def __init__(self, output: PathLike, *, options: list[str] | None = None) -> None:
+    def __init__(self,
+                 manifest_name: str,
+                 output: PathLike,
+                 *,
+                 options: list[str] | None = None
+                 ) -> None:
         super().__init__(options=options)
         self._output = Path(output)
 
         overwrite = 'overwrite' in self._parsed_options
-
-        if self._output.exists() and not overwrite:
-            raise ComposeServiceBuildError(f'Cannot build services; {output} already exists.')
 
         self._pipeline = Pipeline(stages=[
             CreateBuildFolder(self._output, overwrite=overwrite, use_group_name=True),
             BuildComposeFile(self._output),
             BuildRouterConfig(self._output),
             CopyServiceResources(self._output, use_group_name=True),
-            GenerateManifestFile(self._output),
+            GenerateOrUpdateManifestFile(manifest_name, self._output),
         ])
 
     def build(self, service_group: ServiceGroupDefinition) -> None:

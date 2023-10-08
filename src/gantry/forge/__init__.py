@@ -28,6 +28,6 @@ def make_client(config: _Config, app_folder: _Path) -> ForgeClient:
         a new client, based on the provided configuration
     '''
     if client_type := CLIENTS.get(config.forge_provider):
-        return client_type(app_folder, config.forge_url)
+        return client_type(app_folder, config.forge_url, config.forge_owner)
 
     raise KeyError(f'Cannot find a \'{config.forge_provider}\' client.')

@@ -1,9 +1,9 @@
 from typing import Iterator
 
-from ._common import CopyServiceResources, CreateBuildFolder, Pipeline, Target
+from ._common import CopyServiceResources, CreateBuildFolder, Pipeline, Target, MANIFEST_FILE
 
 from .._types import Path, PathLike
-from ..build_manifest import BuildManifest, ImageEntry
+from ..build_manifest import BuildManifest, Entry, ImageEntry
 from ..console import MultiActivityDisplay
 from ..docker import Docker
 from ..exceptions import ServiceImageBuildError
@@ -67,58 +67,61 @@ class BuildDockerImages:
                     raise ServiceImageBuildError()
 
 
-class GenerateManifestFile:
+class GenerateOrUpdateManifestFile:
     '''Generate a manifest file that specifies the versions of each service.'''
-    def __init__(self, build_folder: Path, namespace: str | None, tag: str) -> None:
+    def __init__(self,
+                 manifest_name: str,
+                 build_folder: Path,
+                 namespace: str | None, tag: str
+                 ) -> None:
         self._build_folder = build_folder
+        self._manifest_name = manifest_name
         self._namespace = namespace
         self._tag = tag
 
     def run(self, service_group: ServiceGroupDefinition) -> None:
-        manifest = BuildManifest(entries=[
+        entries: list[Entry] = [
             ImageEntry(_create_image_name(self._namespace, self._tag, service),
                        Path(service_group.name) / service.name / 'Dockerfile')
             for service in service_group
-        ])
-        manifest_file = self._build_folder / 'manifest.json'
-        manifest.save(manifest_file)
-        _logger.debug('Generated manifest at %s', manifest_file)
+        ]
+
+        manifest_json = self._build_folder / MANIFEST_FILE
+
+        try:
+            manifest = BuildManifest.load(manifest_json)
+            for entry in entries:
+                manifest.append_entry(entry)
+            manifest.save(manifest_json)
+            _logger.debug('Updated manifest at \'%s\'', manifest_json)
+        except FileNotFoundError:
+            manifest = BuildManifest(
+                self._manifest_name,
+                entries=entries)
+            manifest.save(manifest_json)
+            _logger.debug('Generated manifest at \'%s\'', manifest_json)
 
 
 class ImageTarget(Target):
     '''Build the container images for a service group.'''
     def __init__(self,
+                 manifest_name: str,
                  namespace: str | None,
                  tag: str,
                  build_folder: PathLike,
                  *,
                  options: list[str] | None = None
                  ) -> None:
-        '''
-        Parameters
-        ----------
-        namespace : str or ``None``
-            an optional namespace that is prepended to the image name; optional
-        tag : str
-            the image tag; often this will be the build verison
-        build_folder : path-like
-            path to the build folder when building the images
-        options : list of str, optional
-            optional arguments to pass into the build target
-        '''
         super().__init__(options=options)
         self._build_folder = Path(build_folder)
 
         overwrite = 'overwrite' in self._parsed_options
         skip_build = 'skip-build' in self._parsed_options
 
-        if self._build_folder.exists() and not overwrite:
-            raise ServiceImageBuildError(f'Cannot build services; {build_folder} already exists.')
-
         stages: list[Pipeline.Stage] = [
             CreateBuildFolder(self._build_folder, overwrite=overwrite, use_group_name=True),
             CopyServiceResources(self._build_folder, use_group_name=True),
-            GenerateManifestFile(self._build_folder, namespace, tag),
+            GenerateOrUpdateManifestFile(manifest_name, self._build_folder, namespace, tag),
         ]
 
         if skip_build:
