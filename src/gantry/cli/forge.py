@@ -4,7 +4,7 @@ from rich.prompt import Prompt
 from rich.console import Console
 
 from ._common import ProgramOptions, print_header
-# from ._git import clone_repo, discover_repo
+from ._git import clone_repo
 
 from .._types import Path
 from ..build_manifest import BuildManifest
@@ -171,64 +171,6 @@ def cmd_authenticate(opts: ProgramOptions,
         raise CliException('Authentication failed...run with \'gantry -d\' to see traceback.')
 
 
-# @cmd.command('commit')
-# @click.option(
-#     '--repos-folder', '-r',
-#     metavar='DIR',
-#     help='Location where all repos are cloned to.',
-#     default=Path('./repos'),
-#     type=click.Path(file_okay=False, dir_okay=True)
-# )
-# @click.argument(
-#     'manifest_path',
-#     metavar='MANIFEST',
-#     type=click.Path(exists=True, file_okay=True, dir_okay=False)
-# )
-# @click.pass_obj
-# def cmd_commit(opts: ProgramOptions,
-#                repos_folder: Path,
-#                manifest_path: Path
-#                ) -> None:
-#     '''Commit build artifacts to a forge repo.
-
-#     This will commit any build artifacts specified in the MANIFEST.  The command
-#     will take care of creating and cloning the repo, as needed.
-#     '''
-#     config = _check_config(opts)
-#     client = make_client(config, opts.app_folder)
-
-#     manifest = BuildManifest.load(manifest_path)
-#     _logger.debug('Loaded manifest from \'%s\'.', manifest_path)
-
-#     console = Console()
-
-#     # 1. Check if the repo exists.  If yes, get the clone URL.  Otherwise,
-#     #    create it first.
-#     try:
-#         repos = client.list_repos()
-
-#         if manifest.name not in repos:
-#             _logger.debug('Could not find a %s repo; creating one.', manifest.name)
-#             repo_name = client.create_repo(manifest.name, manifest.description)
-#             console.print(f':new: Created a new service repo called \'{repo_name}\'.')
-
-#         clone_url = client.get_clone_url(manifest.name, 'https')
-#         _logger.debug('Obtained clone url: \'%s\'', clone_url)
-#     except GantryException as e:
-#         _logger.error('%s', str(e), exc_info=e)
-#         raise CliException('Commit failed...run with \'gantry -d\' to see traceback.')
-
-#     # 2. Update the local repo.  This performs a 'clone' first if the repo isn't
-#     #    on the local disk.
-#     repos_folder.mkdir(parents=True, exist_ok=True)
-#     repo_location = repos_folder / manifest.name
-
-#     if repo := discover_repo(repo_location):
-#         _logger.debug('Found repo at \'%s\'.', repo)
-#     else:
-#         repo = clone_repo(client, clone_url, repo_location)
-
-
 @cmd.command('push')
 @click.option(
     '--dry-run', '-n',
@@ -293,91 +235,100 @@ def cmd_version(opts: ProgramOptions) -> None:
         raise CliException('Failed to get version...run with \'gantry -d\' to see traceback.')
 
 
-# @cmd.group('repos')
-# def cmd_repos() -> None:
-#     '''Manage the service repos on the software forge.
+@cmd.group('repos')
+def cmd_repos() -> None:
+    '''Manage service repos on the software forge.
 
-#     This is a low-level command for directly managing remote repos on the forge.
-#     Use the 'checkout' and 'commit' commands when working with build manifests.
-#     '''
-
-
-# @cmd_repos.command('clone')
-# @click.argument('name')
-# @click.argument('dest', type=click.Path(exists=False))
-# @click.pass_obj
-# def cmd_repos_clone(opts: ProgramOptions, name: str, dest: Path) -> None:
-#     '''Clone a service repo.
-
-#     Clone the service repo NAME to DEST.
-#     '''
-#     config = _check_config(opts)
-#     client = make_client(config, opts.app_folder)
-
-#     console = Console()
-#     console.print('Fetching the clone URL...')
-
-#     try:
-#         clone_url = client.get_clone_url(name, 'https')
-#         _logger.debug('Clone URL: %s', clone_url)
-#         _logger.debug('Destination: %s', dest)
-#     except GantryException as e:
-#         _logger.exception('%s', str(e), exc_info=e)
-#         raise CliException('Failed to clone repo...run with \'gantry -d\' to see traceback.')
-
-#     clone_repo(client, clone_url, dest)
-#     console.print(f'[bold green]\u2713[/bold green] Repo cloned to `{dest}`.')
+    The 'repos' commands allows gantry to create git repos on a remote software
+    forge.  All operations are done using the service account that was used with
+    the 'auth' commnd.
+    '''
 
 
-# @cmd_repos.command('create')
-# @click.argument('name')
-# @click.pass_obj
-# def cmd_repos_create(opts: ProgramOptions, name: str) -> None:
-#     '''Create a service repo.
+@cmd_repos.command('clone')
+@click.argument('name')
+@click.argument('dest', type=click.Path(exists=False))
+@click.pass_obj
+def cmd_repos_clone(opts: ProgramOptions, name: str, dest: Path) -> None:
+    '''Clone a service repo into a new directory.
 
-#     This will create a new, empty repo called NAME in the service organization.
-#     '''
-#     config = _check_config(opts)
-#     client = make_client(config, opts.app_folder)
+    Clone the service repo NAME to DEST.
+    '''
+    config = _check_config(opts)
+    client = make_client(config, opts.app_folder)
 
-#     console = Console()
-#     try:
-#         full_name = client.create_repo(name)
-#         console.print(f'[bold green]\u2713[/bold green] Created \'{full_name}\'')
-#     except GantryException as e:
-#         _logger.exception('%s', str(e), exc_info=e)
-#         raise CliException('Failed to create repo...run with \'gantry -d\' to see traceback.')
+    console = Console()
+    console.print('Fetching the clone URL...')
 
+    try:
+        clone_url = client.get_clone_url(name, 'https')
+        _logger.debug('Clone URL: %s', clone_url)
+        _logger.debug('Destination: %s', dest)
+    except GantryException as e:
+        _logger.exception('%s', str(e), exc_info=e)
+        raise CliException('Failed to clone repo...run with \'gantry -d\' to see traceback.')
 
-# @cmd_repos.command('delete')
-# @click.argument('name')
-# @click.confirmation_option(prompt='Are you sure you want to delete this repo?')
-# @click.pass_obj
-# def cmd_repos_delete(opts: ProgramOptions, name: str) -> None:
-#     '''Delete a service repo.
-
-#     This is a destructive action and *will* remove NAME from the service
-#     organization.
-#     '''
-#     config = _check_config(opts)
-#     client = make_client(config, opts.app_folder)
-
-#     console = Console()
-#     try:
-#         full_name = client.delete_repo(name)
-#         console.print(f':wastebasket: Deleted \'{full_name}\'')
-#     except GantryException as e:
-#         _logger.exception("%s", str(e), exc_info=e)
-#         raise CliException('Failed to delete repo...run with \'gantry -d\' to see traceback.')
+    clone_repo(client, clone_url, dest)
+    console.print(f'[bold green]\u2713[/bold green] Repo cloned to `{dest}`.')
 
 
-# @cmd_repos.command('list')
-# @click.pass_obj
-# def cmd_repos_list(opts: ProgramOptions) -> None:
-#     '''List all repos in the service account.'''
-#     config = _check_config(opts)
-#     client = make_client(config, opts.app_folder)
+@cmd_repos.command('create')
+@click.argument('name')
+@click.pass_obj
+def cmd_repos_create(opts: ProgramOptions, name: str) -> None:
+    '''Create a new service repo.
 
-#     console = Console()
-#     for repo in client.list_repos():
-#         console.print(f'{repo} - {client.check_managed_repo(repo)}')
+    This will create a new, empty repo called NAME in the service organization.
+    '''
+    config = _check_config(opts)
+    client = make_client(config, opts.app_folder)
+
+    console = Console()
+    try:
+        full_name = client.create_repo(name)
+        console.print(f'[bold green]\u2713[/bold green] Created \'{full_name}\'')
+    except GantryException as e:
+        _logger.exception('%s', str(e), exc_info=e)
+        raise CliException('Failed to create repo...run with \'gantry -d\' to see traceback.')
+
+
+@cmd_repos.command('delete')
+@click.argument('name')
+@click.confirmation_option(prompt='Are you sure you want to delete this repo?')
+@click.pass_obj
+def cmd_repos_delete(opts: ProgramOptions, name: str) -> None:
+    '''Delete an existing service repo.
+
+    This is a destructive action and *will* remove NAME from the service
+    organization.
+    '''
+    config = _check_config(opts)
+    client = make_client(config, opts.app_folder)
+
+    console = Console()
+    try:
+        _logger.debug('Deleting \'%s\' from the service account.', name)
+        full_name = client.delete_repo(name)
+        console.print(f':wastebasket: Deleted \'{full_name}\'')
+    except GantryException as e:
+        _logger.exception("%s", str(e), exc_info=e)
+        raise CliException('Failed to delete repo...run with \'gantry -d\' to see traceback.')
+
+
+@cmd_repos.command('list')
+@click.pass_obj
+def cmd_repos_list(opts: ProgramOptions) -> None:
+    '''List all repos in the service account.'''
+    config = _check_config(opts)
+    client = make_client(config, opts.app_folder)
+
+    console = Console()
+    try:
+        repos = client.list_repos()
+        console.print(f'Org: [i]{config.forge_owner}[/i]')
+        console.print('Repos:')
+        for repo in repos:
+            console.print(f' - [i]{repo}[/i]')
+    except GantryException as e:
+        _logger.exception('%s', str(e), exc_info=e)
+        raise CliException('Failed to list repos...run with \'gantry -d\' to see traceback.')
