@@ -78,7 +78,7 @@ def _generate_version(tag: str | None, build_number: int | None) -> str:
     if build_number is not None:
         id = build_number
 
-    return f'{datetime.date.today():%Y%d%m}.{id}'
+    return f'{datetime.date.today():%Y%m%d}.{id}'
 
 
 def _list_targets(ctx: click.Context, param: click.Parameter, value: bool) -> None:
