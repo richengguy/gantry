@@ -261,7 +261,7 @@ def cmd_repos_clone(opts: ProgramOptions, name: str, dest: Path) -> None:
     console.print('Fetching the clone URL...')
 
     try:
-        clone_url = client.get_clone_url(name, 'https')
+        clone_url = client.get_clone_url(name)
         _logger.debug('Clone URL: %s', clone_url)
         _logger.debug('Destination: %s', dest)
     except GantryException as e:

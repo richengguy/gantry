@@ -4,7 +4,7 @@ from rich.progress import Progress, TaskID
 
 from .._types import Path
 from ..exceptions import CliException
-from ..forge import AuthType, ForgeClient
+from ..forge import ForgeClient
 from ..logging import get_app_logger
 
 
@@ -18,25 +18,35 @@ def _configure_pygit2(client: ForgeClient) -> '_GitCallbacks':
 
 class _GitCallbacks(pygit2.RemoteCallbacks):
     def __init__(self, client: ForgeClient) -> None:
-        user = client.auth_info['username']
-        match client.auth_info['auth_type']:
-            case AuthType.BASIC:
-                passwd = client.auth_info['password']
-            case AuthType.TOKEN:
-                passwd = client.auth_info['api_token']
-            case _:
-                passwd = ''
-
-        credentials = pygit2.credentials.UserPass(user, passwd)
+        ssh = Path.home() / '.ssh'
+        self._pubkey = ssh / 'id_rsa.pub'
+        self._privkey = ssh / 'id_rsa'
 
         self._progress: Progress | None = None
         self._task_id: TaskID | None = None
-
-        super().__init__(credentials=credentials)
+        super().__init__()
 
     def set_progress_bar(self, progress: Progress, task: TaskID) -> None:
         self._progress = progress
         self._task_id = task
+
+    def credentials(self, url, username_from_url, allowed_types):
+        use_ssh = allowed_types & pygit2.credentials.GIT_CREDENTIAL_SSH_KEY
+        found_pubkey = self._pubkey.exists()
+        found_privkey = self._privkey.exists()
+
+        if not use_ssh:
+            return None
+
+        if not (found_privkey and found_pubkey):
+            return None
+
+        return pygit2.credentials.Keypair(
+            username_from_url,
+            self._pubkey.as_posix(),
+            self._privkey.as_posix(),
+            ''
+        )
 
     def transfer_progress(self, stats: pygit2.remote.TransferProgress) -> None:
         if self._progress is None or self._task_id is None:
