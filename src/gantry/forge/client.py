@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from enum import StrEnum
 import json
-from typing import Any, Callable, Literal, TypedDict, NotRequired
+from typing import cast, Any, Callable, Literal, TypedDict, NotRequired
 
 import certifi
 
@@ -367,8 +367,18 @@ class ForgeClient(ABC):
         self._store_auth_info()
 
     @property
+    def auth_info(self) -> ForgeAuth:
+        ''':class:`ForgeAuth`: Forge authentication credentials.'''
+        return self._auth_info
+
+    @property
     def ca_certs(self) -> str:
-        '''str: Path to the root CA certs used by the forge provider.'''
+        '''str: Path to the root CA certs used by the forge provider.
+
+        This will always be the path to a single file.  The client will use
+        either a custom certificate or one from ``certifi``.  Both cases will
+        use certificate bundles.
+        '''
         return self._ca_certs
 
     @property
@@ -427,7 +437,7 @@ class ForgeClient(ABC):
     def _load_auth_info(self) -> None:
         try:
             with self._auth_file.open('rt') as f:
-                self._auth_info = json.load(f)
+                self._auth_info = cast(ForgeAuth, json.load(f))
         except FileNotFoundError:
             self._auth_info = ForgeAuth(auth_type=AuthType.NONE)
             with self._auth_file.open('wt') as f:
