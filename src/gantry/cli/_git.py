@@ -99,15 +99,3 @@ def discover_repo(candidate_path: Path) -> pygit2.Repository | None:
         return pygit2.Repository(candidate_path.as_posix(), pygit2.GIT_REPOSITORY_OPEN_NO_SEARCH)
     except pygit2.GitError:
         return None
-
-
-def pull_changes(repo: pygit2.Repository, client: ForgeClient) -> None:
-    '''Pull the latest changes for the repository.
-
-    Parameters
-    ----------
-    repo : :class:`pygit2.Repository`
-        the repo
-    client : :class:`ForgeClient`
-        used to ensure the pull uses the correct credentials
-    '''
