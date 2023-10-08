@@ -72,6 +72,11 @@
             "description": "Used to identify the specific build manifest, particularly when storing its contents on a remote forge.",
             "type": "string"
         },
+        "description": {
+            "title": "description",
+            "description": "An optional description.",
+            "type": "string"
+        },
         "contents": {
             "type": "array",
             "title": "Manifest Contents",
