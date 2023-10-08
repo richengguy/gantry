@@ -27,8 +27,11 @@ class MockForge(ForgeClient):
     def check_managed_repo(self, name: str) -> bool:
         return True
 
-    def create_repo(self, name: str) -> None:
-        ...
+    def create_repo(self, name: str) -> str:
+        return 'test/repo'
+
+    def delete_repo(self, name: str) -> str:
+        return 'test/repo'
 
     def get_clone_url(self, repo: str, type: Literal['ssh', 'https'] = 'ssh') -> str:
         return 'https://git.example.com'
