@@ -1,0 +1,7 @@
+name: healthcheck
+network: test
+router:
+  provider: traefik
+  config: traefik.yml
+services:
+  - disabled

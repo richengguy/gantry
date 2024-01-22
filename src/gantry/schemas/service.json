@@ -122,6 +122,11 @@
                 "$ref": "#/definitions/fileMapping"
             }
         },
+        "healthcheck": {
+            "title": "Container Healthcheck",
+            "description": "Enable/disable the container's healthcheck.  If 'false' it will disable the container's healthcheck, which can be useful if a container has a healthcheck but isn't required.",
+            "type": "boolean"
+        },
         "image": {
             "title": "Docker/Container Image",
             "description": "The image to pull from a container repo (usually Docker Hub).  Cannot be used with 'build-args'.",

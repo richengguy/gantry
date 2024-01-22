@@ -1,4 +1,5 @@
 from pathlib import Path
+import traceback
 from typing import Callable
 
 import click
@@ -24,6 +25,8 @@ def compile_compose_file(samples_folder: Path, tmp_path: Path) -> Callable[[str,
             compose_file = Path(td) / 'build' / 'services.compose' / sample / 'docker-compose.yml'
 
             click.echo(result.stdout)
+            if result.exception is not None:
+                traceback.print_exception(*result.exc_info)
             assert result.exit_code == 0
             assert compose_file.exists()
 

@@ -64,3 +64,8 @@ def test_collection_interface(samples_folder: Path) -> None:
     assert list(service.name for service in service_group) == expected
     for service in expected:
         assert service in service_group
+
+
+def test_disable_healthcheck(compile_compose_file: CompileFn) -> None:
+    compose_file = compile_compose_file('service-definition', 'healthcheck')
+    assert compose_file['services']['disabled']['healthcheck']['disable'] is True

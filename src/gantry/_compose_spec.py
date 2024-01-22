@@ -15,10 +15,21 @@ class ComposeBuild(_ComposeBase, total=False):
     dockerfile: str
 
 
+class ComposeHealthcheck(_ComposeBase, total=False):
+    test: list[str] | str
+    interval: str
+    timeout: str
+    retries: int
+    start_period: str
+    start_interval: str
+    disable: bool
+
+
 class ComposeService(_ComposeBase, total=False):
     build: ComposeBuild
     container_name: str
     environment: dict[str, str]
+    healthcheck: ComposeHealthcheck
     image: str
     labels: dict[str, str | int | bool]
     networks: list[str]

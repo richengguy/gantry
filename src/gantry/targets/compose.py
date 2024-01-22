@@ -77,6 +77,9 @@ def _convert_to_compose_service(service: ServiceDefinition,
     compose_service['volumes'].extend(str(f) for f in service.files.values())
     compose_service['volumes'].extend(f'{k}:{v}' for k, v in service.volumes.items())
 
+    if not service.healthcheck:
+        compose_service['healthcheck'] = {'disable': True}
+
     if metadata := service.metadata:
         compose_service['labels'] = metadata
 

@@ -167,6 +167,11 @@ class ServiceDefinition(_ServiceDefinitionBase):
         return {ref: PathMapping(details) for ref, details in file_mapping.items()}
 
     @property
+    def healthcheck(self) -> bool:
+        '''Indicate if a container's health checks should be enabled or disabled.'''
+        return self._definition.get('healthcheck', True)
+
+    @property
     def image(self) -> str | None:
         '''The name of the container image.  Mutually exclusive with :attr:`build_args`.'''
         return self._definition.get('image')
