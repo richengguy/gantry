@@ -136,6 +136,18 @@ volumes:
     internal-storage: /storage
 ```
 
+Lastly, any container healthchecks can be disabled by setting the `healthcheck`
+property to `false`:
+
+```yaml
+name: disabled-health-check
+image: image-with-unnecessary-health-check:v123
+healthcheck: false
+```
+
+The default is set to `true` since modifying or disabling a healthcheck can best
+be done by customizing the container image.
+
 The following variables are defined when a service definition is being
 processed:
 
