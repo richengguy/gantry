@@ -30,7 +30,7 @@ def test_router_config_render(compile_services: ServicesFn):
         compose_spec: ComposeFile = reader.load(f)
 
     volumes = compose_spec['services']['proxy']['volumes']
-    assert volumes[1] == './traefik-custom.yml:/traefik.yml:ro'
+    assert volumes[1] == './traefik-custom.yml:/etc/traefik/traefik.yml:ro'
 
 
 def test_router_dynamic_config(compile_services: ServicesFn):
@@ -97,4 +97,4 @@ def test_router_socket(sample: str, expected: str, compile_compose_file: Compile
     compose_spec = compile_compose_file('router', sample)
     volumes = compose_spec['services']['proxy']['volumes']
     assert volumes[0] == f'{expected}:/var/run/docker.sock:ro'
-    assert volumes[1] == './traefik.yml:/traefik.yml:ro'
+    assert volumes[1] == './traefik.yml:/etc/traefik/traefik.yml:ro'
