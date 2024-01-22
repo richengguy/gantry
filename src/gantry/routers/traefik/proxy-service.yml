@@ -16,7 +16,7 @@ files:
     external: "./{{ dynamic_config.name }}"
   {% endif %}
   static-config:
-    internal: /traefik.yml
+    internal: /etc/traefik/traefik.yml
     external: "./{{ config_file }}"
 service-ports:
   http:
