@@ -111,6 +111,14 @@ entrypoint: /endpoint
 image: some-image:v123
 ```
 
+If a service should not have a public endpoint, such as a database, then it can
+disabled by setting `internal` to `true`.
+```yaml
+name: internal-database
+image: database:v123
+internal: true
+```
+
 An example definition that that builds the `custom-image` service using a
 Dockerfile inside of the definition folder.  The contents of the `build-args`
 property are used as build arguments when building the image.
@@ -138,7 +146,6 @@ volumes:
 
 Lastly, any container healthchecks can be disabled by setting the `healthcheck`
 property to `false`:
-
 ```yaml
 name: disabled-health-check
 image: image-with-unnecessary-health-check:v123
