@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Callable
 
 from gantry._compose_spec import ComposeFile
+from gantry.routers.provider import DEFAULT_SERVICE_NAME
 
 from ruamel.yaml import YAML
 
@@ -29,7 +30,7 @@ def test_router_config_render(compile_services: ServicesFn):
     with (output_path / 'docker-compose.yml').open('rt') as f:
         compose_spec: ComposeFile = reader.load(f)
 
-    volumes = compose_spec['services']['proxy']['volumes']
+    volumes = compose_spec['services'][DEFAULT_SERVICE_NAME]['volumes']
     assert volumes[1] == './traefik-custom.yml:/etc/traefik/traefik.yml:ro'
 
 
@@ -42,7 +43,7 @@ def test_router_dynamic_config(compile_services: ServicesFn):
     with (output_path / 'docker-compose.yml').open('rt') as f:
         compose_spec: ComposeFile = reader.load(f)
 
-    volumes = compose_spec['services']['proxy']['volumes']
+    volumes = compose_spec['services'][DEFAULT_SERVICE_NAME]['volumes']
     assert './configuration:/configuration:ro' in volumes
 
     # Check that the configuration folder was copied into the services folder.
@@ -69,10 +70,10 @@ def test_router_enable_tls(sample: str, expected: list[str], has_tls: bool,
     '''Check that TLS is enabled correctly.'''
     compose_spec = compile_compose_file('router', sample)
 
-    ports = compose_spec['services']['proxy']['ports']
+    ports = compose_spec['services'][DEFAULT_SERVICE_NAME]['ports']
     assert ports == expected
 
-    for service in ['proxy', 'service']:
+    for service in [DEFAULT_SERVICE_NAME, 'service']:
         labels = compose_spec['services'][service]['labels']
         assert labels[f'traefik.http.services.{service}.loadbalancer.server.port'] == 80
 
@@ -95,6 +96,6 @@ def test_router_enable_tls(sample: str, expected: list[str], has_tls: bool,
 def test_router_socket(sample: str, expected: str, compile_compose_file: CompileFn):
     '''Ensure traefik router args are set correctly.'''
     compose_spec = compile_compose_file('router', sample)
-    volumes = compose_spec['services']['proxy']['volumes']
+    volumes = compose_spec['services'][DEFAULT_SERVICE_NAME]['volumes']
     assert volumes[0] == f'{expected}:/var/run/docker.sock:ro'
     assert volumes[1] == './traefik.yml:/etc/traefik/traefik.yml:ro'
