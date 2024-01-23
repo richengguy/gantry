@@ -177,6 +177,11 @@ class ServiceDefinition(_ServiceDefinitionBase):
         return self._definition.get('image')
 
     @property
+    def internal(self) -> bool:
+        '''The container is internal to the service group and has not public endpoint.'''
+        return self._definition.get('internal', False)
+
+    @property
     def metadata(self) -> dict[str, str | int | bool] | None:
         '''A dictionary containing optional metadata.'''
         return self._definition.get('metadata')

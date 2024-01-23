@@ -38,6 +38,35 @@ def test_router_config_render(compile_services: ServicesFn):
     assert volumes == expected_volumes
 
 
+def test_router_default_config(compile_services: ServicesFn) -> None:
+    '''Check that the default configuration is generated correctly.'''
+    output_path = compile_services('router', 'traefik-default')
+
+    # Check that the compose file references the correct traefik file.
+    reader = YAML()
+    with (output_path / 'docker-compose.yml').open('rt') as f:
+        compose_spec: ComposeFile = reader.load(f)
+
+    ports = compose_spec['services'][DEFAULT_SERVICE_NAME]['ports']
+    expected_ports = [
+        '80:80'
+    ]
+    assert ports == expected_ports
+
+    labels = compose_spec['services'][DEFAULT_SERVICE_NAME]['labels']
+    expected_labels = {
+        'traefik.enable': True
+    }
+    assert labels == expected_labels
+
+    volumes = compose_spec['services'][DEFAULT_SERVICE_NAME]['volumes']
+    expected_volumes = [
+        'traefik.yml:/etc/traefik/traefik.yml:ro',
+        '/var/run/docker.sock:/var/run/docker.sock:ro'
+    ]
+    assert volumes == expected_volumes
+
+
 def test_router_dynamic_config(compile_services: ServicesFn):
     '''Check that Traefik dynamic configuration get sets up correctly.'''
     output_path = compile_services('router', 'traefik-dynamic-config')
@@ -77,17 +106,16 @@ def test_router_enable_tls(sample: str, expected: list[str], has_tls: bool,
     ports = compose_spec['services'][DEFAULT_SERVICE_NAME]['ports']
     assert ports == expected
 
-    for service in [DEFAULT_SERVICE_NAME, 'service']:
-        labels = compose_spec['services'][service]['labels']
-        assert labels[f'traefik.http.services.{service}.loadbalancer.server.port'] == 80
+    labels = compose_spec['services']['service']['labels']
+    assert labels['traefik.http.services.service.loadbalancer.server.port'] == 80
 
-        # Enabling TLS also adds an extra 'tls' label to each service.
-        tls_label = f'traefik.http.routers.{service}.tls'
-        if has_tls:
-            assert tls_label in labels
-            assert labels[tls_label] is True
-        else:
-            assert tls_label not in labels
+    # Enabling TLS also adds an extra 'tls' label to each service.
+    tls_label = 'traefik.http.routers.service.tls'
+    if has_tls:
+        assert tls_label in labels
+        assert labels[tls_label] is True
+    else:
+        assert tls_label not in labels
 
 
 @pytest.mark.parametrize(

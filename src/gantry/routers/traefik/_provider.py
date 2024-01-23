@@ -51,6 +51,7 @@ class TraefikRoutingProvider(RoutingProvider):
         router_definition = {
             'name': DEFAULT_SERVICE_NAME,
             'image': TRAEFIK_IMAGE,
+            'internal': True,
             'entrypoint': {
                 'routes': routes
             },
@@ -92,11 +93,17 @@ class TraefikRoutingProvider(RoutingProvider):
                 'traefik.http.routers.proxy.service': 'api@internal'
             }
         else:
-            router_definition['metadata']['enable'] = True
+            router_definition['metadata']['traefik.enable'] = True
 
         return ServiceDefinition(definition=router_definition)
 
     def register_service(self, service: ServiceDefinition) -> ServiceDefinition:
+        # Internal services are ignored by Traefik when performing automatic
+        # labelling.  However, there it's still possible for the necessary
+        # labels to be added manually.
+        if service.internal:
+            return service
+
         entrypoint = service.entrypoint
 
         config = TraefikConfig()
