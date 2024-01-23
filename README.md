@@ -166,7 +166,8 @@ processed:
 
 Routers are used to route external traffic into the internal container network.
 The choice of router is set by the `router` property in the
-[service group definition](#service-group).
+[service group definition](#service-group).  *gantry* will create the router as
+a special service that is added to the service group.
 
 Each router has a configuration file specified by the `config` property that is
 processed as a Jinja template.  The following variables are defined when the
@@ -191,6 +192,8 @@ The service itself has the following configuration arguments:
 | Argument | Type | Default | Description |
 | -------- | ---- | ------- | ----------- |
 | `dynamic-config` | `string` | empty string | Specify a folder where any [dynamic configuration files](https://doc.traefik.io/traefik/providers/file/) will be located. |
+| `enable-api` | `bool` | `false` | Set to `true` to enable the [Traefik API](https://doc.traefik.io/traefik/operations/api) on the `/api/` endpoint. |
+| `enable-dashboard` | `bool` | `false` | Set to `true` to enable the [Traefik dashboard](https://doc.traefik.io/traefik/operations/dashboard/) for the service group.  It will be accessible at the `/dashboard/` endpoint.  Enabling the dashboard implies that `enable-api` is also `true`. |
 | `enable-tls` | `bool` | `false` | Set to `true` to enable TLS.  Fully enabling TLS support will require [configuring TLS](https://doc.traefik.io/traefik/https/tls/) inside of the Traefik configuration file. |
 | `map-socket` | `bool` | `true` | Map an external Docker socket into the Traefik container as a volume mount. |
 | `socket` | `string` | `/var/run/docker.sock` | Path to the Docker socket Traefik will be using. |
