@@ -1,31 +1,45 @@
-name: proxy
+name: "{{ service.name }}"
 image: traefik:v2.10.1
+
 entrypoint:
   routes:
+    {% if enable_api or enable_dashboard %}
     - /api
+    {% endif %}
+    {% if enable_dashboard %}
     - /dashboard
+    {% endif %}
 files:
   {% if map_socket %}
   docker-socket:
     internal: /var/run/docker.sock
     external: "{{ socket_path }}"
   {% endif %}
+
   {% if dynamic_config %}
   dynamic-config:
     internal: "/{{ dynamic_config.name }}"
     external: "./{{ dynamic_config.name }}"
   {% endif %}
+
   static-config:
     internal: /etc/traefik/traefik.yml
     external: "./{{ config_file }}"
+
 service-ports:
   http:
     internal: 80
     external: 80
+
   {% if enable_tls %}
   https:
     internal: 443
     external: 443
   {% endif %}
+
 metadata:
+  {% if enable_api or enable_dashboard %}
   traefik.http.routers.proxy.service: api@internal
+  {% else %}
+  traefik.enable: true
+  {% endif %}

@@ -4,6 +4,10 @@ from pathlib import Path
 from ..services import ServiceDefinition
 
 
+DEFAULT_SERVICE_NAME = 'router'
+'''Named used for the routing service.'''
+
+
 class RoutingProvider(ABC):
     '''Defines the routing provider for the managed services.'''
 
@@ -37,8 +41,14 @@ class RoutingProvider(ABC):
         '''
 
     @abstractmethod
-    def generate_service(self) -> ServiceDefinition:
+    def generate_service(self, service_properties: dict) -> ServiceDefinition:
         '''Generate the service definition for the routing provider.
+
+        Parameters
+        ----------
+        service_properties : dict
+            dictionary with any global service properties that will be part of
+            the generated router service definition
 
         Returns
         -------
