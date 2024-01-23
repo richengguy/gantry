@@ -1,9 +1,9 @@
-name: traefik-default
+name: traefik-enable-dashboard
 network: test
 router:
   provider: traefik
   config: traefik.yml
   args:
-    enable-dashboard: false
+    enable-dashboard: true
 services:
   - service

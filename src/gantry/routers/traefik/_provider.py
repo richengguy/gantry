@@ -51,7 +51,7 @@ class TraefikRoutingProvider(RoutingProvider):
         router_definition = {
             'name': DEFAULT_SERVICE_NAME,
             'image': TRAEFIK_IMAGE,
-            'internal': True,
+            'internal': not enable_dashboard and not enable_api,
             'entrypoint': {
                 'routes': routes
             },
@@ -90,7 +90,7 @@ class TraefikRoutingProvider(RoutingProvider):
 
         if enable_api or enable_dashboard:
             router_definition['metadata'] = {
-                'traefik.http.routers.proxy.service': 'api@internal'
+                f'traefik.http.routers.{DEFAULT_SERVICE_NAME}.service': 'api@internal'
             }
         else:
             router_definition['metadata']['traefik.enable'] = True

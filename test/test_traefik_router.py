@@ -42,23 +42,25 @@ def test_router_default_config(compile_services: ServicesFn) -> None:
     '''Check that the default configuration is generated correctly.'''
     output_path = compile_services('router', 'traefik-default')
 
-    # Check that the compose file references the correct traefik file.
     reader = YAML()
     with (output_path / 'docker-compose.yml').open('rt') as f:
         compose_spec: ComposeFile = reader.load(f)
 
+    # Check that all ports are expected
     ports = compose_spec['services'][DEFAULT_SERVICE_NAME]['ports']
     expected_ports = [
         '80:80'
     ]
     assert ports == expected_ports
 
+    # Check that all services are expected
     labels = compose_spec['services'][DEFAULT_SERVICE_NAME]['labels']
     expected_labels = {
         'traefik.enable': True
     }
     assert labels == expected_labels
 
+    # Check that all volumes are expected
     volumes = compose_spec['services'][DEFAULT_SERVICE_NAME]['volumes']
     expected_volumes = [
         'traefik.yml:/etc/traefik/traefik.yml:ro',
@@ -89,6 +91,30 @@ def test_router_dynamic_config(compile_services: ServicesFn):
 
     assert certificates['tls']['certificates'][0]['keyFile'] == 'my.key'
     assert certificates['tls']['certificates'][0]['certFile'] == 'my.cert'
+
+
+def test_router_enable_dashboard(compile_services: CompileFn) -> None:
+    '''Ensure the Traefik dashboard endpoints are setup correctly when enabled.'''
+    output_path = compile_services('router', 'traefik-enable-dashboard')
+
+    reader = YAML()
+    with (output_path / 'docker-compose.yml').open('rt') as f:
+        compose_spec: ComposeFile = reader.load(f)
+
+    labels = compose_spec['services'][DEFAULT_SERVICE_NAME]['labels']
+    expected_labels = {
+        f'traefik.http.routers.{DEFAULT_SERVICE_NAME}.service': 'api@internal',
+        'traefik.enable': True,
+        f'traefik.http.services.{DEFAULT_SERVICE_NAME}.loadbalancer.server.port': 80,
+        f'traefik.http.routers.{DEFAULT_SERVICE_NAME}.rule': 'PathPrefix(`/api`) || PathPrefix(`/dashboard`)'  # noqa: E501
+    }
+    assert labels == expected_labels
+
+    ports = compose_spec['services'][DEFAULT_SERVICE_NAME]['ports']
+    expected_ports = [
+        "80:80"
+    ]
+    assert ports == expected_ports
 
 
 @pytest.mark.parametrize(
