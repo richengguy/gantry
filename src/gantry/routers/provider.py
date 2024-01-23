@@ -41,14 +41,8 @@ class RoutingProvider(ABC):
         '''
 
     @abstractmethod
-    def generate_service(self, service_properties: dict) -> ServiceDefinition:
+    def generate_service(self) -> ServiceDefinition:
         '''Generate the service definition for the routing provider.
-
-        Parameters
-        ----------
-        service_properties : dict
-            dictionary with any global service properties that will be part of
-            the generated router service definition
 
         Returns
         -------

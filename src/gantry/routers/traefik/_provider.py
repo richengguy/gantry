@@ -8,7 +8,6 @@ from ...services import ServiceDefinition
 
 
 DOCKER_SOCKET = '/var/run/docker.sock'
-SERVICE_FILE = 'proxy-service.yml'
 TRAEFIK_IMAGE = 'traefik:v2.10.1'
 TRAEFIK_CONFIG = '/etc/traefik/traefik.yml'
 
@@ -39,7 +38,7 @@ class TraefikRoutingProvider(RoutingProvider):
         output_path = output_folder / resource_path.name
         shutil.copytree(resource_path, output_path)
 
-    def generate_service(self, service_properties: dict) -> ServiceDefinition:
+    def generate_service(self) -> ServiceDefinition:
         enable_dashboard = self.args.get('enable-dashboard', False)
         enable_api = enable_dashboard or self.args.get('enable-api', False)
 
@@ -96,24 +95,6 @@ class TraefikRoutingProvider(RoutingProvider):
             router_definition['metadata']['enable'] = True
 
         return ServiceDefinition(definition=router_definition)
-
-        # template_args = {
-        #     'config_file': self.args['_config-file'],
-        #     'dynamic_config': _get_dynamic_config(self.args),
-        #     'enable_api': enable_api,
-        #     'enable_dashboard': enable_dashboard,
-        #     'enable_tls': self.args.get('enable-tls', False),
-        #     'map_socket': self.args.get('map-socket', True),
-        #     'socket_path': self.args.get('socket', DOCKER_SOCKET),
-        #     'service': service_properties
-        # }
-
-        # env = Environment()
-        # output = env.from_string(_get_service_file()).render(**template_args)
-
-        # yaml = YAML()
-        # with StringIO(output) as s:
-        #     return ServiceDefinition(definition=yaml.load(s))
 
     def register_service(self, service: ServiceDefinition) -> ServiceDefinition:
         entrypoint = service.entrypoint

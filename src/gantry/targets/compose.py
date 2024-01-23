@@ -118,14 +118,9 @@ class BuildComposeFile:
         router_args['config-file'] = service_group.router.config.path.name
         router = routers.PROVIDERS[service_group.router.provider](router_args)
 
-        router_service_properties = {
-            'name': 'router',
-            'network': service_group.network
-        }
-
         services = map(
             router.register_service,
-            [router.generate_service(router_service_properties)] + list(service_group)
+            [router.generate_service()] + list(service_group)
         )
 
         service_mapping: dict[str, ComposeService] = {}

@@ -31,7 +31,11 @@ def test_router_config_render(compile_services: ServicesFn):
         compose_spec: ComposeFile = reader.load(f)
 
     volumes = compose_spec['services'][DEFAULT_SERVICE_NAME]['volumes']
-    assert volumes[1] == './traefik-custom.yml:/etc/traefik/traefik.yml:ro'
+    expected_volumes = [
+        'traefik-custom.yml:/etc/traefik/traefik.yml:ro',
+        '/var/run/docker.sock:/var/run/docker.sock:ro'
+    ]
+    assert volumes == expected_volumes
 
 
 def test_router_dynamic_config(compile_services: ServicesFn):
@@ -44,7 +48,7 @@ def test_router_dynamic_config(compile_services: ServicesFn):
         compose_spec: ComposeFile = reader.load(f)
 
     volumes = compose_spec['services'][DEFAULT_SERVICE_NAME]['volumes']
-    assert './configuration:/configuration:ro' in volumes
+    assert 'configuration:/configuration:ro' in volumes
 
     # Check that the configuration folder was copied into the services folder.
     certificates_file = output_path / 'configuration' / 'certificates.yml'
@@ -97,5 +101,8 @@ def test_router_socket(sample: str, expected: str, compile_compose_file: Compile
     '''Ensure traefik router args are set correctly.'''
     compose_spec = compile_compose_file('router', sample)
     volumes = compose_spec['services'][DEFAULT_SERVICE_NAME]['volumes']
-    assert volumes[0] == f'{expected}:/var/run/docker.sock:ro'
-    assert volumes[1] == './traefik.yml:/etc/traefik/traefik.yml:ro'
+    expected_volumes = [
+        'traefik.yml:/etc/traefik/traefik.yml:ro',
+        f'{expected}:/var/run/docker.sock:ro',
+    ]
+    assert volumes == expected_volumes
