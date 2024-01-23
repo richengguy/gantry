@@ -132,6 +132,12 @@
             "description": "The image to pull from a container repo (usually Docker Hub).  Cannot be used with 'build-args'.",
             "type": "string"
         },
+        "internal": {
+            "title": "Internal Service",
+            "description": "Declare this service as being an internal service and not reachable outside of the container network.",
+            "type": "boolean",
+            "default": false
+        },
         "metadata": {
             "title": "Container Metadata",
             "description": "Any metadata information associated with the service container.  May be used by service providers (i.e. Docker labels).",
