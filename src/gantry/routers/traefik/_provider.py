@@ -1,5 +1,6 @@
 from pathlib import Path
 import shutil
+from typing import Any, cast
 
 from ._config import TraefikConfig
 from ...exceptions import ServiceConfigurationException
@@ -12,22 +13,22 @@ TRAEFIK_IMAGE = 'traefik:v2.10.1'
 TRAEFIK_CONFIG = '/etc/traefik/traefik.yml'
 
 
-def _get_dynamic_config(args: dict) -> Path | None:
-    value: str | None = args.get('dynamic-config')
-    if value is None:
-        return None
-    else:
-        return Path(value)
+# def _get_dynamic_config(args: dict) -> Path | None:
+#     value: str | None = args.get('dynamic-config')
+#     if value is None:
+#         return None
+#     else:
+#         return Path(value)
 
 
 class TraefikRoutingProvider(RoutingProvider):
     '''Configures Traefik as a service group routing provider.'''
 
-    def __init__(self, args: dict) -> None:
+    def __init__(self, args: dict[str, Any]) -> None:
         super().__init__(args)
 
     def copy_resources(self, services_folder: Path, output_folder: Path):
-        dynamic_config = _get_dynamic_config(self.args)
+        dynamic_config = cast(str | None, self._args.get('dynamic-config'))
         if dynamic_config is None:
             return
 
@@ -48,6 +49,10 @@ class TraefikRoutingProvider(RoutingProvider):
         if enable_dashboard:
             routes.append('/dashboard')
 
+        config_file = self.args['config-file']
+        if not Path(config_file).is_absolute():
+            config_file = f'./{config_file}'
+
         router_definition = {
             'name': DEFAULT_SERVICE_NAME,
             'image': TRAEFIK_IMAGE,
@@ -58,7 +63,7 @@ class TraefikRoutingProvider(RoutingProvider):
             'files': {
                 'static-config': {
                     'internal': TRAEFIK_CONFIG,
-                    'external': self.args['config-file']
+                    'external': config_file
                 }
             },
             'service-ports': {
@@ -82,10 +87,11 @@ class TraefikRoutingProvider(RoutingProvider):
                 'external': self.args.get('socket', DOCKER_SOCKET)
             }
 
-        if dynamic_config := _get_dynamic_config(self.args):
+        if dynamic_config := self.args.get('dynamic-config'):
+            name = Path(dynamic_config).name
             router_definition['files']['dynamic-config'] = {  # type: ignore
-                'internal': f'/{dynamic_config.name}',
-                'external': str(dynamic_config)
+                'internal': f'/{name}',
+                'external': cast(str, dynamic_config)
             }
 
         if enable_api or enable_dashboard:
