@@ -71,29 +71,29 @@ class TraefikRoutingProvider(RoutingProvider):
         }
 
         if self.args.get('enable-tls', False):
-            router_definition['service-ports']['https'] = {
+            router_definition['service-ports']['https'] = {  # type: ignore
                 'internal': 443,
                 'external': 443
             }
 
         if self.args.get('map-socket', True):
-            router_definition['files']['docker-socket'] = {
+            router_definition['files']['docker-socket'] = {  # type: ignore
                 'internal': DOCKER_SOCKET,
                 'external': self.args.get('socket', DOCKER_SOCKET)
             }
 
         if dynamic_config := _get_dynamic_config(self.args):
-            router_definition['files']['dynamic-config'] = {
+            router_definition['files']['dynamic-config'] = {  # type: ignore
                 'internal': f'/{dynamic_config.name}',
                 'external': str(dynamic_config)
             }
 
         if enable_api or enable_dashboard:
-            router_definition['metadata'] = {
+            router_definition['metadata'] = {  # type: ignore
                 f'traefik.http.routers.{DEFAULT_SERVICE_NAME}.service': 'api@internal'
             }
         else:
-            router_definition['metadata']['traefik.enable'] = True
+            router_definition['metadata']['traefik.enable'] = True  # type: ignore
 
         return ServiceDefinition(definition=router_definition)
 
