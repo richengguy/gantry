@@ -11,14 +11,14 @@ description = "Manager Dockerized services on single-host deployments."
 requires-python = "~=3.10"
 dependencies = [
     "certifi == 2023.7.22",
-    "click ~= 8.1",
-    "docker ~= 6.1",
-    "jinja2 ~= 3.1",
-    "jsonschema ~= 4.17",
-    "pygit2 ~= 1.13",
-    "rich ~= 13.3",
-    "ruamel.yaml ~= 0.17",
-    "urllib3 ~= 2.0"
+    "click == 8.1.*",
+    "docker == 6.1.*",
+    "jinja2 == 3.1.*",
+    "jsonschema == 4.17.*",
+    "pygit2 == 1.13.*",
+    "rich == 13.3.*",
+    "ruamel.yaml == 0.17.*",
+    "urllib3 == 2.0.*"
 ]
 
 [project.optional-dependencies]
