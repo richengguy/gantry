@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Callable
 
 from gantry._compose_spec import ComposeFile
+from gantry.routers.provider import DEFAULT_SERVICE_NAME
 
 from ruamel.yaml import YAML
 
@@ -29,8 +30,43 @@ def test_router_config_render(compile_services: ServicesFn):
     with (output_path / 'docker-compose.yml').open('rt') as f:
         compose_spec: ComposeFile = reader.load(f)
 
-    volumes = compose_spec['services']['proxy']['volumes']
-    assert volumes[1] == './traefik-custom.yml:/etc/traefik/traefik.yml:ro'
+    volumes = compose_spec['services'][DEFAULT_SERVICE_NAME]['volumes']
+    expected_volumes = [
+        './traefik-custom.yml:/etc/traefik/traefik.yml:ro',
+        '/var/run/docker.sock:/var/run/docker.sock:ro'
+    ]
+    assert volumes == expected_volumes
+
+
+def test_router_default_config(compile_services: ServicesFn) -> None:
+    '''Check that the default configuration is generated correctly.'''
+    output_path = compile_services('router', 'traefik-default')
+
+    reader = YAML()
+    with (output_path / 'docker-compose.yml').open('rt') as f:
+        compose_spec: ComposeFile = reader.load(f)
+
+    # Check that all ports are expected
+    ports = compose_spec['services'][DEFAULT_SERVICE_NAME]['ports']
+    expected_ports = [
+        '80:80'
+    ]
+    assert ports == expected_ports
+
+    # Check that all services are expected
+    labels = compose_spec['services'][DEFAULT_SERVICE_NAME]['labels']
+    expected_labels = {
+        'traefik.enable': True
+    }
+    assert labels == expected_labels
+
+    # Check that all volumes are expected
+    volumes = compose_spec['services'][DEFAULT_SERVICE_NAME]['volumes']
+    expected_volumes = [
+        './traefik.yml:/etc/traefik/traefik.yml:ro',
+        '/var/run/docker.sock:/var/run/docker.sock:ro'
+    ]
+    assert volumes == expected_volumes
 
 
 def test_router_dynamic_config(compile_services: ServicesFn):
@@ -42,7 +78,7 @@ def test_router_dynamic_config(compile_services: ServicesFn):
     with (output_path / 'docker-compose.yml').open('rt') as f:
         compose_spec: ComposeFile = reader.load(f)
 
-    volumes = compose_spec['services']['proxy']['volumes']
+    volumes = compose_spec['services'][DEFAULT_SERVICE_NAME]['volumes']
     assert './configuration:/configuration:ro' in volumes
 
     # Check that the configuration folder was copied into the services folder.
@@ -57,6 +93,30 @@ def test_router_dynamic_config(compile_services: ServicesFn):
     assert certificates['tls']['certificates'][0]['certFile'] == 'my.cert'
 
 
+def test_router_enable_dashboard(compile_services: CompileFn) -> None:
+    '''Ensure the Traefik dashboard endpoints are setup correctly when enabled.'''
+    output_path = compile_services('router', 'traefik-enable-dashboard')
+
+    reader = YAML()
+    with (output_path / 'docker-compose.yml').open('rt') as f:
+        compose_spec: ComposeFile = reader.load(f)
+
+    labels = compose_spec['services'][DEFAULT_SERVICE_NAME]['labels']
+    expected_labels = {
+        f'traefik.http.routers.{DEFAULT_SERVICE_NAME}.service': 'api@internal',
+        'traefik.enable': True,
+        f'traefik.http.services.{DEFAULT_SERVICE_NAME}.loadbalancer.server.port': 80,
+        f'traefik.http.routers.{DEFAULT_SERVICE_NAME}.rule': 'PathPrefix(`/api`) || PathPrefix(`/dashboard`)'  # noqa: E501
+    }
+    assert labels == expected_labels
+
+    ports = compose_spec['services'][DEFAULT_SERVICE_NAME]['ports']
+    expected_ports = [
+        "80:80"
+    ]
+    assert ports == expected_ports
+
+
 @pytest.mark.parametrize(
     ('sample', 'expected', 'has_tls'),
     [
@@ -69,20 +129,19 @@ def test_router_enable_tls(sample: str, expected: list[str], has_tls: bool,
     '''Check that TLS is enabled correctly.'''
     compose_spec = compile_compose_file('router', sample)
 
-    ports = compose_spec['services']['proxy']['ports']
+    ports = compose_spec['services'][DEFAULT_SERVICE_NAME]['ports']
     assert ports == expected
 
-    for service in ['proxy', 'service']:
-        labels = compose_spec['services'][service]['labels']
-        assert labels[f'traefik.http.services.{service}.loadbalancer.server.port'] == 80
+    labels = compose_spec['services']['service']['labels']
+    assert labels['traefik.http.services.service.loadbalancer.server.port'] == 80
 
-        # Enabling TLS also adds an extra 'tls' label to each service.
-        tls_label = f'traefik.http.routers.{service}.tls'
-        if has_tls:
-            assert tls_label in labels
-            assert labels[tls_label] is True
-        else:
-            assert tls_label not in labels
+    # Enabling TLS also adds an extra 'tls' label to each service.
+    tls_label = 'traefik.http.routers.service.tls'
+    if has_tls:
+        assert tls_label in labels
+        assert labels[tls_label] is True
+    else:
+        assert tls_label not in labels
 
 
 @pytest.mark.parametrize(
@@ -95,6 +154,9 @@ def test_router_enable_tls(sample: str, expected: list[str], has_tls: bool,
 def test_router_socket(sample: str, expected: str, compile_compose_file: CompileFn):
     '''Ensure traefik router args are set correctly.'''
     compose_spec = compile_compose_file('router', sample)
-    volumes = compose_spec['services']['proxy']['volumes']
-    assert volumes[0] == f'{expected}:/var/run/docker.sock:ro'
-    assert volumes[1] == './traefik.yml:/etc/traefik/traefik.yml:ro'
+    volumes = compose_spec['services'][DEFAULT_SERVICE_NAME]['volumes']
+    expected_volumes = [
+        './traefik.yml:/etc/traefik/traefik.yml:ro',
+        f'{expected}:/var/run/docker.sock:ro',
+    ]
+    assert volumes == expected_volumes

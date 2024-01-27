@@ -15,9 +15,9 @@ echo "Sleeping for 1 second..."
 sleep 1s
 
 hello_world_state=`get_state hello-world`
-proxy_state=`get_state proxy`
+router_state=`get_state router`
 
-if [[ "$hello_world_state" == "running" && "$proxy_state" == "running" ]];
+if [[ "$hello_world_state" == "running" && "$router_state" == "running" ]];
 then
     exit_code=0
 else

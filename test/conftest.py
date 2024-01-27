@@ -48,6 +48,8 @@ def compile_services(samples_folder: Path, tmp_path: Path) -> Callable[[str, str
             output_path = Path(td) / 'build' / 'services.compose' / sample
 
             click.echo(result.stdout)
+            if result.exception is not None:
+                traceback.print_exception(*result.exc_info)
             assert result.exit_code == 0
             assert (output_path / 'docker-compose.yml').exists()
 

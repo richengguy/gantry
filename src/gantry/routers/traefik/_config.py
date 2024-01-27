@@ -3,7 +3,7 @@ class TraefikConfig:
     def __init__(self) -> None:
         self._enable_tls: bool = False
         self._port: int | None = None
-        self._routes: set[str] | None = None
+        self._routes: list[str] | None = None
         self._service: str | None = None
 
     def add_route(self, route: str) -> None:
@@ -15,8 +15,10 @@ class TraefikConfig:
             the path prefix to add
         '''
         if self._routes is None:
-            self._routes = set()
-        self._routes.add(route)
+            self._routes = list()
+        if route in self._routes:
+            raise ValueError(f"Already defined route `{route}`.")
+        self._routes.append(route)
 
     def set_enable_tls(self, enable_tls: bool) -> None:
         '''Enable TLS termination on this service.

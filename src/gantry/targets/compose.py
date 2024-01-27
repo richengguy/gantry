@@ -112,8 +112,10 @@ class BuildComposeFile:
 
         compose_file = self._build_folder / service_group.name / 'docker-compose.yml'
 
+        # The extra '_config-file' property is used to inject the configuration
+        # file to the router.
         router_args = service_group.router.args.copy()
-        router_args['_config-file'] = service_group.router.config.path.name
+        router_args['config-file'] = service_group.router.config.path.name
         router = routers.PROVIDERS[service_group.router.provider](router_args)
 
         services = map(

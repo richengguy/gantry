@@ -1,13 +1,18 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
+from typing import Any
 
 from ..services import ServiceDefinition
+
+
+DEFAULT_SERVICE_NAME = 'router'
+'''Named used for the routing service.'''
 
 
 class RoutingProvider(ABC):
     '''Defines the routing provider for the managed services.'''
 
-    def __init__(self, args: dict) -> None:
+    def __init__(self, args: dict[str, Any]) -> None:
         '''Initialize the routing provider using the provided arguments.
 
         Parameters
@@ -18,7 +23,7 @@ class RoutingProvider(ABC):
         self._args = args.copy()
 
     @property
-    def args(self) -> dict:
+    def args(self) -> dict[str, Any]:
         '''dict: The routing provider's configuration arguments.'''
         return self._args
 

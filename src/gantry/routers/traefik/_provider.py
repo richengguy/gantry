@@ -1,45 +1,34 @@
-import importlib.resources
-from io import StringIO
 from pathlib import Path
 import shutil
-
-from jinja2 import Environment
-
-from ruamel.yaml import YAML
+from typing import Any, cast
 
 from ._config import TraefikConfig
-from .. import RoutingProvider
 from ...exceptions import ServiceConfigurationException
+from ..provider import RoutingProvider, DEFAULT_SERVICE_NAME
 from ...services import ServiceDefinition
 
 
 DOCKER_SOCKET = '/var/run/docker.sock'
-SERVICE_FILE = 'proxy-service.yml'
+TRAEFIK_IMAGE = 'traefik:v2.10.1'
+TRAEFIK_CONFIG = '/etc/traefik/traefik.yml'
 
 
-def _get_service_file() -> str:
-    resource = importlib.resources.files(__package__).joinpath(SERVICE_FILE)
-    with importlib.resources.as_file(resource) as path:
-        with path.open() as f:
-            return f.read()
-
-
-def _get_dynamic_config(args: dict) -> Path | None:
-    value: str | None = args.get('dynamic-config')
-    if value is None:
-        return None
-    else:
-        return Path(value)
+# def _get_dynamic_config(args: dict) -> Path | None:
+#     value: str | None = args.get('dynamic-config')
+#     if value is None:
+#         return None
+#     else:
+#         return Path(value)
 
 
 class TraefikRoutingProvider(RoutingProvider):
-    '''Configures Traefik as the services' routing provider.'''
+    '''Configures Traefik as a service group routing provider.'''
 
-    def __init__(self, args: dict) -> None:
+    def __init__(self, args: dict[str, Any]) -> None:
         super().__init__(args)
 
     def copy_resources(self, services_folder: Path, output_folder: Path):
-        dynamic_config = _get_dynamic_config(self.args)
+        dynamic_config = cast(str | None, self._args.get('dynamic-config'))
         if dynamic_config is None:
             return
 
@@ -51,22 +40,76 @@ class TraefikRoutingProvider(RoutingProvider):
         shutil.copytree(resource_path, output_path)
 
     def generate_service(self) -> ServiceDefinition:
-        template_args = {
-            'config_file': self.args['_config-file'],
-            'dynamic_config': _get_dynamic_config(self.args),
-            'enable_tls': self.args.get('enable-tls', False),
-            'map_socket': self.args.get('map-socket', True),
-            'socket_path': self.args.get('socket', DOCKER_SOCKET),
+        enable_dashboard = self.args.get('enable-dashboard', False)
+        enable_api = enable_dashboard or self.args.get('enable-api', False)
+
+        routes: list[str] = []
+        if enable_api:
+            routes.append('/api')
+        if enable_dashboard:
+            routes.append('/dashboard')
+
+        config_file = self.args['config-file']
+        if not Path(config_file).is_absolute():
+            config_file = f'./{config_file}'
+
+        router_definition = {
+            'name': DEFAULT_SERVICE_NAME,
+            'image': TRAEFIK_IMAGE,
+            'internal': not enable_dashboard and not enable_api,
+            'entrypoint': {
+                'routes': routes
+            },
+            'files': {
+                'static-config': {
+                    'internal': TRAEFIK_CONFIG,
+                    'external': config_file
+                }
+            },
+            'service-ports': {
+                'http': {
+                    'internal': 80,
+                    'external': 80
+                }
+            },
+            'metadata': {}
         }
 
-        env = Environment()
-        output = env.from_string(_get_service_file()).render(**template_args)
+        if self.args.get('enable-tls', False):
+            router_definition['service-ports']['https'] = {  # type: ignore
+                'internal': 443,
+                'external': 443
+            }
 
-        yaml = YAML()
-        with StringIO(output) as s:
-            return ServiceDefinition(definition=yaml.load(s))
+        if self.args.get('map-socket', True):
+            router_definition['files']['docker-socket'] = {  # type: ignore
+                'internal': DOCKER_SOCKET,
+                'external': self.args.get('socket', DOCKER_SOCKET)
+            }
+
+        if dynamic_config := self.args.get('dynamic-config'):
+            name = Path(dynamic_config).name
+            router_definition['files']['dynamic-config'] = {  # type: ignore
+                'internal': f'/{name}',
+                'external': cast(str, dynamic_config)
+            }
+
+        if enable_api or enable_dashboard:
+            router_definition['metadata'] = {  # type: ignore
+                f'traefik.http.routers.{DEFAULT_SERVICE_NAME}.service': 'api@internal'
+            }
+        else:
+            router_definition['metadata']['traefik.enable'] = True  # type: ignore
+
+        return ServiceDefinition(definition=router_definition)
 
     def register_service(self, service: ServiceDefinition) -> ServiceDefinition:
+        # Internal services are ignored by Traefik when performing automatic
+        # labelling.  However, there it's still possible for the necessary
+        # labels to be added manually.
+        if service.internal:
+            return service
+
         entrypoint = service.entrypoint
 
         config = TraefikConfig()
