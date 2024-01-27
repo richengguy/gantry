@@ -23,7 +23,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "black",
+    "black ~= 24.0",
     "flake8",
     "mypy",
     "pytest",
