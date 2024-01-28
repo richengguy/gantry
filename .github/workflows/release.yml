@@ -57,7 +57,7 @@ jobs:
   update-release:
     name: Attach artifacts to release.
     runs-on: ubuntu-latest
-    # if: ${{ github.event_name == 'release' }}
+    if: ${{ github.event_name == 'release' }}
     needs:
       - build-dist
       - generate-schemas
@@ -71,20 +71,15 @@ jobs:
         id: version
         run: echo "tag=${GITHUB_REF/refs\/tags\//}" >> $GITHUB_OUTPUT
 
-      - name: Tests
-        run: echo ${RELEASE_TAG}
+      - name: Attach artifacts to release.
+        run: |
+          echo "Attaching artifacts to ${RELEASE_TAG}."
+          wheel=$(ls build-artifacts/*.whl)
+          sdist=$(ls build-artifacts/*.tar.gz)
+          gh release upload ${RELEASE_TAG} \
+            "schemas/schemas.tar.gz#Service Definition Schemas" \
+            "${wheel}#Python Wheel" \
+            "${sdist}#Source Distribution"
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ steps.version.outputs.tag }}
-
-      # - name: Attach artifacts to release.
-      #   run: |
-      #     echo "Attaching artifacts to ${RELEASE_TAG}."
-      #     wheel=$(ls build-artifacts/*.whl)
-      #     sdist=$(ls build-artifacts/*.tar.gz)
-      #     gh release upload ${RELEASE_TAG} \
-      #       "schemas/schemas.tar.gz#Service Definition Schemas" \
-      #       "${wheel}#Python Wheel" \
-      #       "${sdist}#Source Distribution"
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #     RELEASE_TAG: ${{ steps.version.outputs.tag }}
