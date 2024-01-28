@@ -14,7 +14,7 @@ jobs:
     name: Build gantry release.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Run 'build' to generate source distribution and Python wheel.
         run: |
@@ -23,7 +23,7 @@ jobs:
           conda run -n gantry --live-stream python -m build --sdist --wheel
 
       - name: Upload build artifacts.
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: build-artifacts
           path: dist
@@ -33,7 +33,7 @@ jobs:
     name: Generate JSON schema package.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Export the JSON schemas from gantry.
         run: |
@@ -46,7 +46,7 @@ jobs:
         run: tar -czvf schemas.tar.gz schemas
 
       - name: Upload build artifacts.
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: schemas
           path: schemas.tar.gz
@@ -60,10 +60,10 @@ jobs:
       - build-dist
       - generate-schemas
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Download build artifacts.
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
 
       - name: Parse version tag.
         id: version
