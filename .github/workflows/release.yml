@@ -69,7 +69,7 @@ jobs:
 
       - name: Parse version tag.
         id: version
-        run: echo "::set-output name=tag::${GITHUB_REF/refs\/tags\//}"
+        run: echo "tag=${GITHUB_REF/refs\/tags\//}" >> $GITHUB_OUTPUT
 
       - name: Attach artifacts to release.
         run: |
