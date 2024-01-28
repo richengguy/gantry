@@ -34,5 +34,8 @@ dev = [
 [project.scripts]
 gantry = "gantry.cli:main"
 
-[tool.flit.sdist]
-exclude=[".github", "scripts"]
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"gantry.schemas" = ["*.json"]
