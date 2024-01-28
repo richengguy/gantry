@@ -7,13 +7,11 @@ from ..config import Config as _Config
 from .._types import Path as _Path
 
 
-CLIENTS: dict[str, Type[ForgeClient]] = {
-    GiteaClient.provider_name(): GiteaClient
-}
+CLIENTS: dict[str, Type[ForgeClient]] = {GiteaClient.provider_name(): GiteaClient}
 
 
 def make_client(config: _Config, app_folder: _Path) -> ForgeClient:
-    '''Create a new client given the application configuration.
+    """Create a new client given the application configuration.
 
     Parameters
     ----------
@@ -26,8 +24,8 @@ def make_client(config: _Config, app_folder: _Path) -> ForgeClient:
     -------
     :class:`ForgeClient`
         a new client, based on the provided configuration
-    '''
+    """
     if client_type := CLIENTS.get(config.forge_provider):
         return client_type(app_folder, config.forge_url, config.forge_owner)
 
-    raise KeyError(f'Cannot find a \'{config.forge_provider}\' client.')
+    raise KeyError(f"Cannot find a '{config.forge_provider}' client.")

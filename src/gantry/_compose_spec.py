@@ -44,8 +44,10 @@ class ComposeFile(_ComposeBase, total=False):
     volumes: dict[str, None]
 
 
-def define_using_image(image: str, container_name: str, tag: str = 'latest') -> ComposeService:
-    '''Define a compose service using an existing image.
+def define_using_image(
+    image: str, container_name: str, tag: str = "latest"
+) -> ComposeService:
+    """Define a compose service using an existing image.
 
     Parameters
     ----------
@@ -61,18 +63,19 @@ def define_using_image(image: str, container_name: str, tag: str = 'latest') -> 
     dict
         a dictionary that defines a basic compose service; can be modified as
         needed
-    '''
+    """
+    # fmt: off
     return {
-        'image': ':'.join([image, tag]),
-        'container_name': container_name
+        "image": ":".join([image, tag]),
+        "container_name": container_name
     }
+    # fmt: on
 
 
-def define_using_build(name: str,
-                       context: str,
-                       args: dict[str, str] = {},
-                       tag: str = 'custom') -> ComposeService:
-    '''Define a compose service from a build context.
+def define_using_build(
+    name: str, context: str, args: dict[str, str] = {}, tag: str = "custom"
+) -> ComposeService:
+    """Define a compose service from a build context.
 
     A build context means that the service should be built from a dockerfile
     rather than pulled from a registry
@@ -93,16 +96,16 @@ def define_using_build(name: str,
     dict
         a dictionary that defines a basic compose service; can be modified as
         needed
-    '''
-    build_args: ComposeBuild = {
-        'context': context
-    }
+    """
+    build_args: ComposeBuild = {"context": context}
 
     if len(args) != 0:
-        build_args['args'] = args
+        build_args["args"] = args
 
+    # fmt: off
     return {
-        'image': ':'.join([name, tag]),
-        'container_name': name,
-        'build': build_args
+        "image": ":".join([name, tag]),
+        "container_name": name,
+        "build": build_args
     }
+    # fmt: on

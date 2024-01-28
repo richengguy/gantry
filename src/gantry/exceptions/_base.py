@@ -1,2 +1,2 @@
 class GantryException(Exception):
-    '''Root of all gantry application exceptions.'''
+    """Root of all gantry application exceptions."""

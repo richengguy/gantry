@@ -3,8 +3,33 @@ name: Run Tests
 on: [pull_request]
 
 jobs:
+  format-code:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup conda environment and install black.
+        run: |
+          conda env create
+          conda run -n gantry --live-stream pip install black
+
+      - name: Check if source is formatted correctly with 'black'.
+        run: |
+          conda run -n gantry --live-stream black --check src/ test/
+
+      - name: Display formatting errors.
+        run: |
+          out=$(conda run -n gantry --live-stream black --diff src/ test/)
+
+          echo "${out}"
+          echo "\`\`\`python" >> $GITHUB_STEP_SUMMARY
+          echo "${out}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        if: ${{ failure() }}
+
   test:
     runs-on: ubuntu-latest
+    needs: format-code
     steps:
       - uses: actions/checkout@v3
 
@@ -12,7 +37,7 @@ jobs:
         run: |
           conda env create
           conda run -n gantry --live-stream pip install --upgrade pip setuptools
-          conda run -n gantry --live-stream flit install
+          conda run -n gantry --live-stream pip install ".[dev]"
 
       - name: Run flake8.
         run: conda run -n gantry --live-stream flake8 src
@@ -25,6 +50,7 @@ jobs:
 
   build-samples:
     runs-on: ubuntu-latest
+    needs: format-code
     strategy:
       fail-fast: false
       matrix:

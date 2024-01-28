@@ -5,20 +5,20 @@ import rich.logging
 from ._types import PathLike
 
 
-LOGGER_NAME = 'gantry'
+LOGGER_NAME = "gantry"
 
 
 class _ConsoleFormatter(logging.Formatter):
     def __init__(self) -> None:
-        super().__init__('%(message)s')
+        super().__init__("%(message)s")
 
     def format(self, record: logging.LogRecord) -> str:
         output = super().format(record)
 
-        if hasattr(record, 'component') and record.component is not None:
-            return f' {record.component} -> {output}'
+        if hasattr(record, "component") and record.component is not None:
+            return f" {record.component} -> {output}"
         else:
-            return f' -> {output}'
+            return f" -> {output}"
 
 
 class _ExceptionsFilter(logging.Filter):
@@ -34,7 +34,7 @@ class _ExceptionsFilter(logging.Filter):
             record.exc_info = None
             return True
 
-        if hasattr(record, '_orig_exc_info'):
+        if hasattr(record, "_orig_exc_info"):
             record.exc_info = record._orig_exc_info
             del record._orig_exc_info
 
@@ -42,12 +42,12 @@ class _ExceptionsFilter(logging.Filter):
 
 
 def init_logger(
-        *,
-        log_level: int = logging.INFO,
-        logfile: PathLike | None = None,
-        show_traceback: bool = False
-        ) -> logging.Logger:
-    '''Initialize the application logger.
+    *,
+    log_level: int = logging.INFO,
+    logfile: PathLike | None = None,
+    show_traceback: bool = False,
+) -> logging.Logger:
+    """Initialize the application logger.
 
     This should only be called once when the application first starts.
 
@@ -59,7 +59,7 @@ def init_logger(
         write the logs to a file
     show_traceback : bool
         show exception traceback in the log output
-    '''
+    """
     logger = logging.getLogger(LOGGER_NAME)
     logger.setLevel(logging.DEBUG)
 
@@ -73,9 +73,9 @@ def init_logger(
 
     # Create the file logger.
     if logfile is not None:
-        fh = logging.FileHandler(logfile, 'w')
+        fh = logging.FileHandler(logfile, "w")
         fh.setLevel(logging.DEBUG)
-        fh.setFormatter(logging.Formatter('{levelname: <8} - {message}', style='{'))
+        fh.setFormatter(logging.Formatter("{levelname: <8} - {message}", style="{"))
         fh.addFilter(_ExceptionsFilter(remove=False))
         logger.addHandler(fh)
 
@@ -83,7 +83,7 @@ def init_logger(
 
 
 def get_app_logger(component: str | None = None) -> logging.Logger:
-    '''Get an application logger.
+    """Get an application logger.
 
     This function ensures that the names of various loggers are used
     consistently throughout the application.  Passing in no component name will
@@ -100,13 +100,13 @@ def get_app_logger(component: str | None = None) -> logging.Logger:
     -------
     :class:`logging.Logger`
         logger instance
-    '''
-    name = 'gantry'
+    """
+    name = "gantry"
 
     if component is not None:
-        name = '.'.join(['gantry', component])
+        name = ".".join(["gantry", component])
 
     # The adapter implements the same interface as a logger, and from a user's
     # perspective should be exactly the same.
     logger = logging.getLogger(name)
-    return logging.LoggerAdapter(logger, {'component': component})  # type: ignore
+    return logging.LoggerAdapter(logger, {"component": component})  # type: ignore

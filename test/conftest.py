@@ -15,14 +15,20 @@ from ruamel.yaml import YAML
 
 
 @pytest.fixture()
-def compile_compose_file(samples_folder: Path, tmp_path: Path) -> Callable[[str, str], ComposeFile]:
+def compile_compose_file(
+    samples_folder: Path, tmp_path: Path
+) -> Callable[[str, str], ComposeFile]:
 
     def _run_command(folder: str, sample: str) -> ComposeFile:
         runner = CliRunner()
         sample_path = samples_folder / folder / sample
         with runner.isolated_filesystem(temp_dir=tmp_path) as td:
-            result = runner.invoke(cli.main, ['build', 'compose', sample_path.as_posix()])
-            compose_file = Path(td) / 'build' / 'services.compose' / sample / 'docker-compose.yml'
+            result = runner.invoke(
+                cli.main, ["build", "compose", sample_path.as_posix()]
+            )
+            compose_file = (
+                Path(td) / "build" / "services.compose" / sample / "docker-compose.yml"
+            )
 
             click.echo(result.stdout)
             if result.exception is not None:
@@ -31,27 +37,31 @@ def compile_compose_file(samples_folder: Path, tmp_path: Path) -> Callable[[str,
             assert compose_file.exists()
 
             yaml = YAML()
-            with compose_file.open('rt') as f:
+            with compose_file.open("rt") as f:
                 return yaml.load(f)
 
     return _run_command
 
 
 @pytest.fixture()
-def compile_services(samples_folder: Path, tmp_path: Path) -> Callable[[str, str], Path]:
+def compile_services(
+    samples_folder: Path, tmp_path: Path
+) -> Callable[[str, str], Path]:
 
     def _run_command(folder: str, sample: str) -> Path:
         runner = CliRunner()
         sample_path = samples_folder / folder / sample
         with runner.isolated_filesystem(temp_dir=tmp_path) as td:
-            result = runner.invoke(cli.main, ['build', 'compose', sample_path.as_posix()])
-            output_path = Path(td) / 'build' / 'services.compose' / sample
+            result = runner.invoke(
+                cli.main, ["build", "compose", sample_path.as_posix()]
+            )
+            output_path = Path(td) / "build" / "services.compose" / sample
 
             click.echo(result.stdout)
             if result.exception is not None:
                 traceback.print_exception(*result.exc_info)
             assert result.exit_code == 0
-            assert (output_path / 'docker-compose.yml').exists()
+            assert (output_path / "docker-compose.yml").exists()
 
             return output_path
 
@@ -60,4 +70,4 @@ def compile_services(samples_folder: Path, tmp_path: Path) -> Callable[[str, str
 
 @pytest.fixture()
 def samples_folder(pytestconfig: Config) -> Path:
-    return pytestconfig.invocation_params.dir / 'test' / 'samples'
+    return pytestconfig.invocation_params.dir / "test" / "samples"
