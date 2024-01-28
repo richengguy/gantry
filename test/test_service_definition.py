@@ -48,9 +48,15 @@ def test_entrypoints(
     assert port_rule == expected_port
 
 
+# fmt: off
 @pytest.mark.parametrize(
-    ("service", "expected_args"), [("no-args", {}), ("with-args", {"foo": 1, "bar": 2})]
+    ("service", "expected_args"),
+    [
+        ("no-args", {}),
+        ("with-args", {"foo": 1, "bar": 2})
+    ]
 )
+# fmt: on
 def test_build_args(
     service: str, expected_args: dict[str, str | int], compile_compose_file: CompileFn
 ):
