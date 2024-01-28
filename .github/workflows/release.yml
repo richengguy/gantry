@@ -1,25 +1,31 @@
 name: Build a new release.
 
 on:
+  push:
+    branches:
+      - main
   release:
     types:
       - published
+  pull_request:
+    paths-ignore:
+      - 'README.md'
 
 jobs:
   build-dist:
     name: Build gantry release.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: Run 'flit build' to generate source distribution and Python wheel.
+      - name: Run 'build' to generate source distribution and Python wheel.
         run: |
           conda env create
-          conda run -n gantry --live-stream pip install --upgrade pip setuptools
-          conda run -n gantry --live-stream flit build --setup-py
+          conda run -n gantry --live-stream pip install --upgrade pip setuptools build
+          conda run -n gantry --live-stream python -m build --sdist --wheel
 
       - name: Upload build artifacts.
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: build-artifacts
           path: dist
@@ -29,20 +35,20 @@ jobs:
     name: Generate JSON schema package.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Export the JSON schemas from gantry.
         run: |
           conda env create
           conda run -n gantry --live-stream pip install --upgrade pip setuptools
-          conda run -n gantry --live-stream flit install
+          conda run -n gantry --live-stream pip install .
           conda run -n gantry --live-stream gantry schemas export
 
       - name: Create schemas archive.
         run: tar -czvf schemas.tar.gz schemas
 
       - name: Upload build artifacts.
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: schemas
           path: schemas.tar.gz
@@ -51,14 +57,15 @@ jobs:
   update-release:
     name: Attach artifacts to release.
     runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'release' }}
     needs:
       - build-dist
       - generate-schemas
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Download build artifacts.
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
 
       - name: Parse version tag.
         id: version

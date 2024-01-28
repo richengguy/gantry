@@ -7,22 +7,23 @@ how they're deployed (docker-compose, podman, etc.).
 ## Installation
 
 The best way to install *gantry* is to use the provided
-[conda](https://docs.conda.io/en/latest/) environment file.  It requires Python
-3.10 and [flit](https://flit.pypa.io/en/latest/pyproject_toml.html), which the
-environment file is already set up for.  Installing into a conda environment is
-done by
+[conda](https://docs.conda.io/en/latest/) environment file.
 
 ```bash
 $ conda env create
 $ conda activate gantry
-(gantry) $ flit install
+(gantry) $ pip install .
 ```
+
+> [!TIP]
+> The development dependencies can be installed with `pip install .[dev]`.
 
 You can verify the installation by running `gantry --version`.
 
 ## Configuration
 
-> **Important:** This section is still under construction.
+> [!NOTE]
+> This section is still under construction.
 
 All of *gantry*'s runtime configuration can be managed through a `gantry.yml`
 file.  Below is an example configuration:

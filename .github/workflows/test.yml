@@ -31,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: format-code
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Setup conda environment and install gantry.
         run: |
@@ -59,13 +59,13 @@ jobs:
           - simple-tls
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Build and install gantry.
         run: |
           conda env create
           conda run -n gantry --live-stream pip install --upgrade pip setuptools
-          conda run -n gantry --live-stream flit install
+          conda run -n gantry --live-stream pip install .
 
       - name: Build '${{ matrix.sample }}'' sample.
         run: |
