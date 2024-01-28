@@ -12,11 +12,11 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Run 'flit build' to generate source distribution and Python wheel.
+      - name: Run 'build' to generate source distribution and Python wheel.
         run: |
           conda env create
-          conda run -n gantry --live-stream pip install --upgrade pip setuptools
-          conda run -n gantry --live-stream flit build --setup-py
+          conda run -n gantry --live-stream pip install --upgrade pip setuptools build
+          conda run -n gantry --live-stream python -m build --sdist --wheel
 
       - name: Upload build artifacts.
         uses: actions/upload-artifact@v3
@@ -35,7 +35,7 @@ jobs:
         run: |
           conda env create
           conda run -n gantry --live-stream pip install --upgrade pip setuptools
-          conda run -n gantry --live-stream flit install
+          conda run -n gantry --live-stream pip install .
           conda run -n gantry --live-stream gantry schemas export
 
       - name: Create schemas archive.
