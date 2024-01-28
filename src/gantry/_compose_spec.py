@@ -64,7 +64,12 @@ def define_using_image(
         a dictionary that defines a basic compose service; can be modified as
         needed
     """
-    return {"image": ":".join([image, tag]), "container_name": container_name}
+    # fmt: off
+    return {
+        "image": ":".join([image, tag]),
+        "container_name": container_name
+    }
+    # fmt: on
 
 
 def define_using_build(
@@ -97,4 +102,10 @@ def define_using_build(
     if len(args) != 0:
         build_args["args"] = args
 
-    return {"image": ":".join([name, tag]), "container_name": name, "build": build_args}
+    # fmt: off
+    return {
+        "image": ":".join([name, tag]),
+        "container_name": name,
+        "build": build_args
+    }
+    # fmt: on

@@ -53,17 +53,27 @@ class TraefikRoutingProvider(RoutingProvider):
         if not Path(config_file).is_absolute():
             config_file = f"./{config_file}"
 
+        # fmt: off
         router_definition = {
             "name": DEFAULT_SERVICE_NAME,
             "image": TRAEFIK_IMAGE,
             "internal": not enable_dashboard and not enable_api,
             "entrypoint": {"routes": routes},
             "files": {
-                "static-config": {"internal": TRAEFIK_CONFIG, "external": config_file}
+                "static-config": {
+                    "internal": TRAEFIK_CONFIG,
+                    "external": config_file
+                }
             },
-            "service-ports": {"http": {"internal": 80, "external": 80}},
+            "service-ports": {
+                "http": {
+                    "internal": 80,
+                    "external": 80
+                }
+            },
             "metadata": {},
         }
+        # fmt: on
 
         if self.args.get("enable-tls", False):
             router_definition["service-ports"]["https"] = {  # type: ignore

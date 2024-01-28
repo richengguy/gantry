@@ -47,9 +47,12 @@ class Config:
             raise ConfigFileValidationError(errors)
 
         if "registry" not in config:
+            # fmt: off
             config["registry"] = _RegistryConfig(
-                url=config["forge"]["url"], namespace=config["forge"]["owner"]
+                url=config["forge"]["url"],
+                namespace=config["forge"]["owner"]
             )
+            # fmt: on
 
         self._forge_properties = config["forge"]
         self._registry_properties = config["registry"]
