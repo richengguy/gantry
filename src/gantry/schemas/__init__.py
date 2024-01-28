@@ -8,15 +8,16 @@ from jsonschema.exceptions import ValidationError
 
 
 class Schema(Enum):
-    '''Enumeration of available schemas.'''
-    BUILD_MANIFEST = 'build_manifest'
-    CONFIG = 'config'
-    SERVICE = 'service'
-    SERVICE_GROUP = 'service_group'
+    """Enumeration of available schemas."""
+
+    BUILD_MANIFEST = "build_manifest"
+    CONFIG = "config"
+    SERVICE = "service"
+    SERVICE_GROUP = "service_group"
 
 
 def get_schema(schema: Schema) -> dict:
-    '''Retrieve a service defintion schema.
+    """Retrieve a service defintion schema.
 
     Parameters
     ----------
@@ -27,8 +28,8 @@ def get_schema(schema: Schema) -> dict:
     -------
     dict
         a dictionary with the schema in JSON Schema format
-    '''
-    schema_file = f'{schema.value}.json'
+    """
+    schema_file = f"{schema.value}.json"
     resource = importlib.resources.files(__package__).joinpath(schema_file)
     with importlib.resources.as_file(resource) as path:
         with path.open() as f:
@@ -36,7 +37,7 @@ def get_schema(schema: Schema) -> dict:
 
 
 def validate_object(instance: dict, schema: Schema) -> list[ValidationError]:
-    '''Validate an object against some schema.
+    """Validate an object against some schema.
 
     Parameters
     ----------
@@ -44,7 +45,7 @@ def validate_object(instance: dict, schema: Schema) -> list[ValidationError]:
         instance of the object being validated
     schema : Schema
         schema used for validation
-    '''
+    """
     schema_repr = get_schema(schema)
     validator = Draft7Validator(schema_repr)
     errors: Iterator[ValidationError] = validator.iter_errors(instance)

@@ -9,30 +9,29 @@ from ._compose_spec import _ComposeBase
 
 
 class YamlSerializer:
-    '''Serialize dictionaries to YAML-encoded strings or files.'''
+    """Serialize dictionaries to YAML-encoded strings or files."""
+
     def __init__(self, *, show_header=True) -> None:
-        '''Initialize the serializer.
+        """Initialize the serializer.
 
         Parameters
         ----------
         show_header : bool, optional
             output a header in the generated YAML output, by default True
-        '''
+        """
         self._yaml = YAML()
         self._yaml.compact(seq_seq=False, seq_map=False)
         self._yaml.indent(mapping=4, sequence=6, offset=4)
         self._yaml.default_flow_style = False
 
-        self._header = '\n'.join([
-            'This file has been automatically generated.',
-            'DO NOT MODIFY',
-            ' '
-        ])
+        self._header = "\n".join(
+            ["This file has been automatically generated.", "DO NOT MODIFY", " "]
+        )
 
         self._show_header = show_header
 
     def to_string(self, data: dict | _ComposeBase) -> str:
-        '''Convert a dictionary to a YAML-encoded string.
+        """Convert a dictionary to a YAML-encoded string.
 
         Parameters
         ----------
@@ -43,14 +42,16 @@ class YamlSerializer:
         -------
         str
             string representation
-        '''
-        output = _prep_data(cast(dict, data), self._header if self._show_header else None)
+        """
+        output = _prep_data(
+            cast(dict, data), self._header if self._show_header else None
+        )
         with StringIO() as s:
             self._yaml.dump(output, s)
             return s.getvalue()
 
     def to_file(self, data: dict | _ComposeBase, path: Path):
-        '''Serializes a dictionary to some file.
+        """Serializes a dictionary to some file.
 
         Parameters
         ----------
@@ -58,14 +59,16 @@ class YamlSerializer:
             dictionary to convert
         path : Path
             path to file location
-        '''
-        output = _prep_data(cast(dict, data), self._header if self._show_header else None)
-        with path.open('wt') as f:
+        """
+        output = _prep_data(
+            cast(dict, data), self._header if self._show_header else None
+        )
+        with path.open("wt") as f:
             self._yaml.dump(output, f)
 
 
 def _prep_data(data: dict, header: str | None = None) -> CommentedMap:
-    '''Prepare data for serialization.
+    """Prepare data for serialization.
 
     Parameters
     ----------
@@ -78,7 +81,7 @@ def _prep_data(data: dict, header: str | None = None) -> CommentedMap:
     -------
     CommentedMap
         processed data
-    '''
+    """
     prepped_data = _prep_dict(data)
 
     if header:
@@ -88,7 +91,7 @@ def _prep_data(data: dict, header: str | None = None) -> CommentedMap:
 
 
 def _prep_dict(data: dict) -> CommentedMap:
-    '''Converts an dictionary into its ruamel.yaml commented equivalent.
+    """Converts an dictionary into its ruamel.yaml commented equivalent.
 
     Parameters
     ----------
@@ -99,7 +102,7 @@ def _prep_dict(data: dict) -> CommentedMap:
     -------
     CommentedMap
         the coverted entry
-    '''
+    """
     out = CommentedMap()
     for key, value in data.items():
         match value:
@@ -114,7 +117,7 @@ def _prep_dict(data: dict) -> CommentedMap:
 
 
 def _prep_list(data: list) -> CommentedSeq:
-    '''Converts a list into its ruamel.yaml commented equivalent.
+    """Converts a list into its ruamel.yaml commented equivalent.
 
     Parameters
     ----------
@@ -125,7 +128,7 @@ def _prep_list(data: list) -> CommentedSeq:
     -------
     CommentedSeq
         the converted list
-    '''
+    """
     out = CommentedSeq()
 
     for item in data:

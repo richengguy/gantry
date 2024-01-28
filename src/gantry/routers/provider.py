@@ -5,30 +5,30 @@ from typing import Any
 from ..services import ServiceDefinition
 
 
-DEFAULT_SERVICE_NAME = 'router'
-'''Named used for the routing service.'''
+DEFAULT_SERVICE_NAME = "router"
+"""Named used for the routing service."""
 
 
 class RoutingProvider(ABC):
-    '''Defines the routing provider for the managed services.'''
+    """Defines the routing provider for the managed services."""
 
     def __init__(self, args: dict[str, Any]) -> None:
-        '''Initialize the routing provider using the provided arguments.
+        """Initialize the routing provider using the provided arguments.
 
         Parameters
         ----------
         args : dict
             optional arguments used for configuring the routing provider
-        '''
+        """
         self._args = args.copy()
 
     @property
     def args(self) -> dict[str, Any]:
-        '''dict: The routing provider's configuration arguments.'''
+        """dict: The routing provider's configuration arguments."""
         return self._args
 
     def copy_resources(self, service_folder: Path, output_folder: Path):
-        '''Copy any resources need by the routing providing.
+        """Copy any resources need by the routing providing.
 
         The default implementation does nothing.  A provider can override this
         method if it needs to copy files when certain arguments are set.
@@ -39,21 +39,21 @@ class RoutingProvider(ABC):
             location of the services group definition folder
         output_folder : Path
             location of the services output folder
-        '''
+        """
 
     @abstractmethod
     def generate_service(self) -> ServiceDefinition:
-        '''Generate the service definition for the routing provider.
+        """Generate the service definition for the routing provider.
 
         Returns
         -------
         ServiceDefinition
             a dictionary defining the compose service
-        '''
+        """
 
     @abstractmethod
     def register_service(self, service: ServiceDefinition) -> ServiceDefinition:
-        '''Register a service with the routing provider.
+        """Register a service with the routing provider.
 
         Registering a service allows the routing provider know where it needs to
         route services.
@@ -67,4 +67,4 @@ class RoutingProvider(ABC):
         -------
         ServiceDefinition
             the updated service definition
-        '''
+        """

@@ -6,7 +6,7 @@ from .build import (
     ComposeServiceBuildError,
     ComposeTargetException,
     ImageTargetException,
-    ServiceImageBuildError
+    ServiceImageBuildError,
 )
 
 from .build_manifest import (
@@ -27,7 +27,7 @@ from .docker import (
     DockerGenericError,
     DockerConnectionError,
     NoSuchImageError,
-    RegistryAuthError
+    RegistryAuthError,
 )
 
 from .forge import (
