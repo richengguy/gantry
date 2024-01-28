@@ -1,6 +1,10 @@
 name: Build a new release.
 
 on:
+  push:
+    branches:
+      - main
+  pull_request:
   release:
     types:
       - published
@@ -51,6 +55,7 @@ jobs:
   update-release:
     name: Attach artifacts to release.
     runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'release' }}
     needs:
       - build-dist
       - generate-schemas
