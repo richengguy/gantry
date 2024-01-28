@@ -17,7 +17,7 @@ jobs:
         run: |
           conda run -n gantry --live-stream black --check src/ test/
 
-      - name: Display formatting errors when there was an error.
+      - name: Display formatting errors.
         run: |
           out=$(conda run -n gantry --live-stream black --diff src/ test/)
 
