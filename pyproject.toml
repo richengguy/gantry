@@ -21,7 +21,7 @@ dependencies = [
     "urllib3 == 2.5.*"
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
     "black",
     "flake8",

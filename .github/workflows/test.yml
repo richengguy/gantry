@@ -58,7 +58,7 @@ jobs:
           python-version-file: ".python-version"
 
       - name: Sync dependencies
-        run: uv sync --extra dev
+        run: uv sync
 
       - name: Run mypy
         run: uv run ./scripts/run-mypy
