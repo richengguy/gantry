@@ -12,7 +12,7 @@ requires-python = "==3.11.*"
 dependencies = [
     "certifi == 2023.7.22",
     "click == 8.1.*",
-    "docker == 6.1.*",
+    "docker == 7.1.*",
     "jinja2 == 3.1.*",
     "jsonschema == 4.17.*",
     "pygit2 == 1.13.*",
