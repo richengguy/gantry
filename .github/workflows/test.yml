@@ -8,18 +8,30 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup conda environment and install black.
-        run: |
-          conda env create
-          conda run -n gantry --live-stream pip install black
+      - name: Setup 'uv'
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.7.13"
+          checksum: "ff031258ff08b3aca46648398e21fe9679744501e3c9a928c8e42d596a708bbc"
+          enable-cache: true
 
-      - name: Check if source is formatted correctly with 'black'.
-        run: |
-          conda run -n gantry --live-stream black --check src/ test/
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: ".python-version"
+
+      - name: Sync dependencies
+        run: uv sync --only-dev
+
+      - name: Run black
+        run: uv run black --check src/ test/
+
+      - name: Run flake8
+        run: uv run flake8 src/
 
       - name: Display formatting errors.
         run: |
-          out=$(conda run -n gantry --live-stream black --diff src/ test/)
+          out=$(uv run black --check src/ test/)
 
           echo "${out}"
           echo "\`\`\`python" >> $GITHUB_STEP_SUMMARY
@@ -33,20 +45,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup conda environment and install gantry.
-        run: |
-          conda env create
-          conda run -n gantry --live-stream pip install --upgrade pip setuptools
-          conda run -n gantry --live-stream pip install ".[dev]"
+      - name: Setup 'uv'
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.7.13"
+          checksum: "ff031258ff08b3aca46648398e21fe9679744501e3c9a928c8e42d596a708bbc"
+          enable-cache: true
 
-      - name: Run flake8.
-        run: conda run -n gantry --live-stream flake8 src
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: ".python-version"
 
-      - name: Run mypy.
-        run: conda run -n gantry --live-stream python ./scripts/run-mypy
+      - name: Sync dependencies
+        run: uv sync --extra dev
 
-      - name: Run tests.
-        run: conda run -n gantry --live-stream pytest -p no:legacypath
+      - name: Run mypy
+        run: uv run ./scripts/run-mypy
+
+      - name: Run tests
+        run: uv run pytest -p no:legacypath
 
   build-samples:
     runs-on: ubuntu-latest
@@ -61,12 +79,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build and install gantry.
-        run: |
-          conda env create
-          conda run -n gantry --live-stream pip install --upgrade pip setuptools
-          conda run -n gantry --live-stream pip install .
+      - name: Setup 'uv'
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.7.13"
+          checksum: "ff031258ff08b3aca46648398e21fe9679744501e3c9a928c8e42d596a708bbc"
+          enable-cache: true
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: ".python-version"
 
       - name: Build '${{ matrix.sample }}'' sample.
         run: |
-          conda run -n gantry --live-stream ./scripts/build-sample ${{ matrix.sample }}
+          uv sync
+          uv run ./scripts/build-sample ${{ matrix.sample }}
