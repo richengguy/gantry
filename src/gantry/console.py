@@ -252,7 +252,7 @@ class MultiActivityDisplay(ActivityDisplay):
             else:
                 fields = {}
 
-            yield stage, self.start(fields)
+            yield stage, self.start(fields)  # type: ignore
             self._total_progress.update(task, advance=1)
             self.stop(stop_surface=False)
 
