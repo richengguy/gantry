@@ -6,17 +6,18 @@ how they're deployed (docker-compose, podman, etc.).
 
 ## Installation
 
-The best way to install *gantry* is to use the provided
-[conda](https://docs.conda.io/en/latest/) environment file.
+*gantry* uses [uv](https://docs.astral.sh/uv/) for package management.  It will
+take care of getting the correct Python version and dependencies.  Simply run
 
 ```bash
-$ conda env create
-$ conda activate gantry
-(gantry) $ pip install .
+$ uv sync
+$ source .venv/bin/activate
 ```
 
+to get started.
+
 > [!TIP]
-> The development dependencies can be installed with `pip install .[dev]`.
+> The development dependencies can be installed with `uv sync --extra dev`.
 
 You can verify the installation by running `gantry --version`.
 

@@ -18,11 +18,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Run 'build' to generate source distribution and Python wheel.
-        run: |
-          conda env create
-          conda run -n gantry --live-stream pip install --upgrade pip setuptools build
-          conda run -n gantry --live-stream python -m build --sdist --wheel
+      - name: Setup 'uv'
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.7.13"
+          checksum: "909278eb197c5ed0e9b5f16317d1255270d1f9ea4196e7179ce934d48c4c2545"
+          enable-cache: true
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: ".python-version"
+
+      - name: Build source distribution and Python wheel
+        run: uv build --sdist --wheel
 
       - name: Upload build artifacts.
         uses: actions/upload-artifact@v4
@@ -37,12 +46,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Setup 'uv'
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.7.13"
+          checksum: "909278eb197c5ed0e9b5f16317d1255270d1f9ea4196e7179ce934d48c4c2545"
+          enable-cache: true
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: ".python-version"
+
       - name: Export the JSON schemas from gantry.
-        run: |
-          conda env create
-          conda run -n gantry --live-stream pip install --upgrade pip setuptools
-          conda run -n gantry --live-stream pip install .
-          conda run -n gantry --live-stream gantry schemas export
+        run: uv run gantry schemas export
 
       - name: Create schemas archive.
         run: tar -czvf schemas.tar.gz schemas

@@ -45,7 +45,7 @@ class _GitCallbacks(pygit2.RemoteCallbacks):
             username_from_url, self._pubkey.as_posix(), self._privkey.as_posix(), ""
         )
 
-    def transfer_progress(self, stats: pygit2.remote.TransferProgress) -> None:
+    def transfer_progress(self, stats: pygit2.remotes.TransferProgress) -> None:
         if self._progress is None or self._task_id is None:
             return
 
@@ -79,7 +79,9 @@ def clone_repo(client: ForgeClient, clone_url: str, dest: Path) -> pygit2.Reposi
         with Progress() as progress:
             task = progress.add_task(f":arrow_down_small: Cloning `{clone_url}`")
             git_callbacks.set_progress_bar(progress, task)
-            repo = pygit2.clone_repository(clone_url, dest, callbacks=git_callbacks)
+            repo = pygit2.clone_repository(
+                clone_url, dest.as_posix(), callbacks=git_callbacks
+            )
 
         _logger.debug("Finished `git clone`.")
         return repo
