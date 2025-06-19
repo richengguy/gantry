@@ -45,7 +45,7 @@ class _GitCallbacks(pygit2.RemoteCallbacks):
             username_from_url, self._pubkey.as_posix(), self._privkey.as_posix(), ""
         )
 
-    def transfer_progress(self, stats: pygit2.remote.TransferProgress) -> None:
+    def transfer_progress(self, stats: pygit2.remotes.TransferProgress) -> None:
         if self._progress is None or self._task_id is None:
             return
 
