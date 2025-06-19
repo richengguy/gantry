@@ -265,7 +265,6 @@ class Docker:
             if socket is None:
                 raise DockerConnectionError()
             url = socket
-            print(url)
 
         try:
             _logger.debug("Create low-level Docker API client.")
